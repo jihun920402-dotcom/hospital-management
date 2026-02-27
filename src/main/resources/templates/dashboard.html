@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>병원 대시보드</title>
+    <style>
+        body { font-family: 'Malgun Gothic', sans-serif; padding: 40px; background-color: #f4f7f6; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        .header { text-align: center; margin-bottom: 40px; }
+
+        .dashboard-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 25px; margin-bottom: 40px; }
+        .card { background-color: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); text-align: center; border-top: 5px solid #007bff; }
+        .card h3 { margin-top: 0; color: #666; font-size: 1.1em; }
+        .card p { font-size: 3em; font-weight: bold; margin: 15px 0; color: #333; }
+
+        .card.hosp { border-top-color: purple; }
+        .card.hosp p { color: purple; }
+        .card.unpaid { border-top-color: #dc3545; }
+        .card.unpaid p { color: #dc3545; }
+
+        .footer-action { text-align: center; }
+        .btn-back { padding: 12px 30px; background-color: #343a40; color: white; text-decoration: none; border-radius: 30px; font-weight: bold; transition: 0.3s; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+        .btn-back:hover { background-color: #000; transform: translateY(-2px); }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>📊 병원 운영 대시보드</h1>
+        <p th:text="${#calendars.format(#calendars.createNow(), 'yyyy년 MM월 dd일 HH:mm')} + ' 기준 현황'"></p>
+    </div>
+
+    <div class="dashboard-grid">
+        <div class="card">
+            <h3>전체 등록 환자</h3>
+            <p th:text="${totalPatients}">0</p>
+            <small>명</small>
+        </div>
+        <div class="card hosp">
+            <h3>현재 입원 중</h3>
+            <p th:text="${hospitalizedCount}">0</p>
+            <small>명</small>
+        </div>
+        <div class="card unpaid">
+            <h3>수납 미완료</h3>
+            <p th:text="${unpaidCount}">0</p>
+            <small>건</small>
+        </div>
+    </div>
+
+    <div class="footer-action">
+        <a href="/patients" class="btn-back">⬅️ 환자 관리 목록으로</a>
+    </div>
+</div>
+</body>
+</html>

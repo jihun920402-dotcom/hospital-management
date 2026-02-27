@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+  <meta charset="UTF-8">
+  <title>환자 상세 정보</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; }
+    .container { max-width: 900px; margin: 0 auto; }
+    .info-box, .chart-form { background-color: #f9f9f9; padding: 15px; border-radius: 4px; margin-bottom: 20px; border: 1px solid #eee; }
+
+    /* 폼 스타일 */
+    .chart-form div { margin-bottom: 10px; }
+    .chart-form label { display: block; margin-bottom: 5px; font-weight: bold; }
+    .chart-form input { width: 100%; padding: 8px; box-sizing: border-box; }
+
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+    th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+    th { background-color: #f4f4f4; }
+    .total-fee { text-align: right; font-size: 1.2em; font-weight: bold; margin-top: 10px; }
+
+    .btn { padding: 8px 12px; text-decoration: none; border-radius: 4px; border: none; cursor: pointer; display: inline-block;}
+    .btn-save { background-color: #28a745; color: white; }
+    .btn-back { background-color: #6c757d; color: white; }
+    .btn-action { background-color: #17a2b8; color: white; margin-left: 5px;}
+  </style>
+</head>
+<body>
+<div class="container">
+  <h1>🏥 환자 상세 정보</h1>
+
+  <div class="info-box">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+      <div>
+        <p><strong>이름:</strong> <span th:text="${patient.name}"></span></p>
+        <p><strong>나이:</strong> <span th:text="${patient.age}"></span></p>
+        <p><strong>주요 병명:</strong> <span th:text="${patient.disease}"></span></p>
+
+        <p><strong>현재 상태:</strong>
+          <span th:if="${patient.status != null}"
+                th:text="${patient.status.displayName}"
+                th:style="${patient.status == T(com.example.hospital.entity.PatientStatus).HOSPITALIZED} ? 'color: purple; font-weight: bold;' :
+                                       (${patient.status == T(com.example.hospital.entity.PatientStatus).DISCHARGED} ? 'color: gray;' : 'color: black;')"></span>
+          <span th:if="${patient.status == null}">대기 중</span>
+        </p>
+      </div>
+
+      <div>
+        <a th:if="${patient.status != null and patient.status != T(com.example.hospital.entity.PatientStatus).HOSPITALIZED and patient.status != T(com.example.hospital.entity.PatientStatus).DISCHARGED}"
+           th:href="@{/patients/hospitalize/{id}(id=${patient.id})}" class="btn btn-action">입원 처리</a>
+
+        <a th:if="${patient.status == null}"
+           th:href="@{/patients/hospitalize/{id}(id=${patient.id})}" class="btn btn-action">입원 처리</a>
+
+        <a th:if="${patient.status != null and patient.status == T(com.example.hospital.entity.PatientStatus).HOSPITALIZED}"
+           th:href="@{/patients/discharge/{id}(id=${patient.id})}" class="btn btn-action" style="background-color: #6c757d;">퇴원 처리</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="chart-form">
+    <h3>진료 기록 추가</h3>
+    <form th:action="@{/patients/{id}/charts(id=${patient.id})}" method="post">
+      <div>
+        <label>진료일</label>
+        <input type="date" name="chartDate" required />
+      </div>
+      <div>
+        <label>담당 의사</label>
+        <input type="text" name="doctorName" placeholder="의사 이름 입력" required />
+      </div>
+      <div>
+        <label>증상</label>
+        <input type="text" name="symptom" placeholder="증상 입력" required />
+      </div>
+      <div>
+        <label>진단</label>
+        <input type="text" name="diagnosis" placeholder="진단명 입력" required />
+      </div>
+      <div>
+        <label>처방</label>
+        <input type="text" name="prescription" placeholder="처방 내용 입력" required />
+      </div>
+      <div>
+        <label>진료비 (원)</label>
+        <input type="number" name="fee" placeholder="금액 입력" required />
+      </div>
+      <button type="submit" class="btn btn-save">기록 추가</button>
+    </form>
+  </div>
+
+  <h2>진료 기록 목록</h2>
+  <table th:if="${not #lists.isEmpty(charts)}">
+    <thead>
+    <tr>
+      <th>날짜</th>
+      <th>담당 의사</th>
+      <th>증상</th>
+      <th>진단</th>
+      <th>처방</th>
+      <th>진료비</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="chart : ${charts}">
+      <td th:text="${chart.chartDate}">2023-10-27</td>
+      <td th:text="${chart.doctorName}">김철수</td>
+      <td th:text="${chart.symptom}">기침</td>
+      <td th:text="${chart.diagnosis}">감기</td>
+      <td th:text="${chart.prescription}">약 처방</td>
+      <td th:text="${#numbers.formatInteger(chart.fee, 0, 'COMMA')} + '원'">10,000원</td>
+    </tr>
+    </tbody>
+  </table>
+
+  <div class="total-fee" th:if="${not #lists.isEmpty(charts)}">
+    총 진료비:
+    <span th:text="${#numbers.formatInteger(#aggregates.sum(charts.![fee]), 0, 'COMMA')} + '원'">50,000원</span>
+  </div>
+
+  <p th:if="${#lists.isEmpty(charts)}">진료 기록이 없습니다.</p>
+
+  <br>
+  <a th:href="@{/patients}" class="btn btn-back">목록으로 돌아가기</a>
+</div>
+</body>
+</html>

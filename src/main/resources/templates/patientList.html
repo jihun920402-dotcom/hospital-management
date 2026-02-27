@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title>환자 관리 시스템 - 목록</title>
+    <style>
+        body { font-family: 'Malgun Gothic', sans-serif; padding: 20px; line-height: 1.6; }
+        .container { max-width: 1400px; margin: 0 auto; }
+        .header-area { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #333; padding-bottom: 10px; }
+
+        .input-form { background-color: #f9f9f9; padding: 20px; border-radius: 8px; margin-bottom: 25px; border: 1px solid #ddd; }
+        .input-form div { display: inline-block; margin-right: 15px; vertical-align: top; }
+        .input-form label { display: block; margin-bottom: 5px; font-weight: bold; color: #555; }
+        .input-form input, .input-form select { padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
+
+        .search-form { margin-bottom: 20px; text-align: right; }
+        .search-form input { padding: 8px; width: 250px; border: 1px solid #ccc; border-radius: 4px; }
+
+        /* 버튼 스타일 */
+        .btn { padding: 8px 15px; text-decoration: none; border-radius: 4px; border: none; cursor: pointer; display: inline-block; font-size: 0.9em; transition: 0.3s; }
+        .btn-save { background-color: #007bff; color: white; }
+        .btn-edit { background-color: #ffc107; color: black; }
+        .btn-delete { background-color: #dc3545; color: white; }
+        .btn-dashboard { background-color: #343a40; color: white; font-weight: bold; }
+        .btn-action { background-color: #17a2b8; color: white; }
+        .btn-pay { background-color: #28a745; color: white; }
+        .btn:hover { opacity: 0.8; }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
+        th { background-color: #f4f4f4; font-weight: bold; }
+        tr:hover { background-color: #f8f9fa; }
+
+        .pagination { text-align: center; margin-top: 30px; }
+        .pagination a { padding: 10px 15px; border: 1px solid #ddd; text-decoration: none; color: #333; margin: 0 2px; border-radius: 4px; }
+        .pagination .active { background-color: #007bff; color: white; border-color: #007bff; }
+
+        .status-hosp { color: purple; font-weight: bold; }
+        .status-dis { color: gray; }
+        .pay-done { color: green; font-weight: bold; }
+        .pay-not { color: red; font-weight: bold; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header-area">
+        <h1>🏥 환자 관리 시스템</h1>
+        <a th:href="@{/patients/dashboard}" class="btn btn-dashboard">📊 대시보드 보기</a>
+    </div>
+
+    <div class="input-form">
+        <h3 th:text="${patient.id == null} ? '➕ 환자 신규 등록' : '📝 환자 정보 수정'">환자 등록</h3>
+        <form th:action="@{/patients}" th:object="${patient}" method="post">
+            <input type="hidden" th:field="*{id}" />
+            <div>
+                <label>이름</label>
+                <input type="text" th:field="*{name}" placeholder="성함 입력" required/>
+            </div>
+            <div>
+                <label>병명</label>
+                <input type="text" th:field="*{disease}" placeholder="주요 증상"/>
+            </div>
+            <div>
+                <label>나이</label>
+                <input type="number" th:field="*{age}" placeholder="세"/>
+            </div>
+            <div>
+                <label>현재 상태</label>
+                <select th:field="*{status}">
+                    <option th:each="s : ${T(com.example.hospital.entity.PatientStatus).values()}"
+                            th:value="${s}"
+                            th:text="${s.displayName}">상태</option>
+                </select>
+            </div>
+            <div style="margin-top: 25px;">
+                <button type="submit" class="btn btn-save" th:text="${patient.id == null} ? '등록하기' : '수정완료'">저장</button>
+                <a th:if="${patient.id != null}" th:href="@{/patients}" class="btn btn-edit" style="background-color: #6c757d; color: white;">취소</a>
+            </div>
+        </form>
+    </div>
+
+    <form th:action="@{/patients}" method="get" class="search-form">
+        <input type="text" name="keyword" th:value="${keyword}" placeholder="검색할 환자 이름을 입력하세요" />
+        <button type="submit" class="btn btn-save">검색</button>
+    </form>
+
+    <table>
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>이름</th>
+            <th>병명</th>
+            <th>나이</th>
+            <th>상태</th>
+            <th>입원일</th>
+            <th>퇴원일</th>
+            <th>총 진료비</th>
+            <th>수납상태</th>
+            <th>관리메뉴</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="p : ${patients.content}">
+            <td th:text="${p.id}">1</td>
+            <td>
+                <a th:href="@{/patients/{id}(id=${p.id})}" th:text="${p.name}" style="color: #007bff; font-weight: bold; text-decoration: none;">환자명</a>
+            </td>
+            <td th:text="${p.disease}">-</td>
+            <td th:text="${p.age}">-</td>
+            <td>
+                <span th:if="${p.status != null}" th:text="${p.status.displayName}"
+                      th:class="${p.status == T(com.example.hospital.entity.PatientStatus).HOSPITALIZED ? 'status-hosp' : (p.status == T(com.example.hospital.entity.PatientStatus).DISCHARGED ? 'status-dis' : '')}"></span>
+                <span th:if="${p.status == null}">대기중</span>
+            </td>
+            <td th:text="${p.admissionDate != null ? p.admissionDate : '-'}"></td>
+            <td th:text="${p.dischargeDate != null ? p.dischargeDate : '-'}"></td>
+            <td th:text="${#numbers.formatInteger(#aggregates.sum(p.charts.![fee]) ?: 0, 0, 'COMMA')} + '원'">0원</td>
+            <td>
+                <span th:text="${p.paid} ? '결제완료' : '미납'" th:class="${p.paid ? 'pay-done' : 'pay-not'}"></span>
+            </td>
+            <td>
+                <a th:if="${p.status != T(com.example.hospital.entity.PatientStatus).HOSPITALIZED and p.status != T(com.example.hospital.entity.PatientStatus).DISCHARGED}"
+                   th:href="@{/patients/hospitalize/{id}(id=${p.id})}" class="btn btn-action">입원</a>
+
+                <a th:if="${p.status == T(com.example.hospital.entity.PatientStatus).HOSPITALIZED}"
+                   th:href="@{/patients/discharge/{id}(id=${p.id})}" class="btn btn-action" style="background-color: #6c757d;">퇴원</a>
+
+                <a th:if="${!p.paid}" th:href="@{/patients/pay/{id}(id=${p.id})}" class="btn btn-pay" onclick="return confirm('수납 완료 처리하시겠습니까?')">수납</a>
+
+                <a th:href="@{/patients/edit/{id}(id=${p.id})}" class="btn btn-edit">수정</a>
+                <a th:href="@{/patients/delete/{id}(id=${p.id})}" class="btn btn-delete" onclick="return confirm('데이터가 영구 삭제됩니다. 계속하시겠습니까?')">삭제</a>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+
+    <div class="pagination" th:if="${patients.totalPages > 0}">
+        <a th:href="@{/patients(page=${patients.number - 1}, keyword=${keyword})}" th:if="${!patients.first}">이전</a>
+        <span th:each="i : ${#numbers.sequence(0, patients.totalPages - 1)}">
+            <a th:href="@{/patients(page=${i}, keyword=${keyword})}" th:text="${i + 1}" th:class="${i == patients.number} ? 'active' : ''"></a>
+        </span>
+        <a th:href="@{/patients(page=${patients.number + 1}, keyword=${keyword})}" th:if="${!patients.last}">다음</a>
+    </div>
+</div>
+</body>
+</html>
