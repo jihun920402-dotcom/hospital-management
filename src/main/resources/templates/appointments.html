@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>예약 관리 | 병원 관리 시스템</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #1a6fc4; --primary-dark: #155a9e; --primary-light: #e8f1fb;
+            --accent: #00b8a9; --danger: #e74c3c; --warning: #f39c12;
+            --success: #27ae60; --gray-100: #f1f3f5; --gray-200: #e9ecef;
+            --gray-400: #ced4da; --gray-600: #6c757d; --gray-800: #343a40;
+            --text: #2d3748;
+            --shadow-md: 0 4px 16px rgba(0,0,0,0.10); --radius: 10px;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background:
+                radial-gradient(ellipse 80% 70% at 0% 0%,   #c7dcf8 0%, transparent 55%),
+                radial-gradient(ellipse 60% 55% at 100% 0%, #b8f0ea 0%, transparent 55%),
+                radial-gradient(ellipse 70% 60% at 60% 100%,#cde4f9 0%, transparent 55%),
+                radial-gradient(ellipse 50% 45% at 30% 60%, #daeeff 0%, transparent 50%),
+                #e8f1fc;
+            background-attachment: fixed;
+            min-height: 100vh; color: var(--text);
+        }
+
+        /* ── 헤더 ── */
+        .site-header {
+            position: relative; height: 130px;
+            background: linear-gradient(135deg, #0d2d5e 0%, #1a6fc4 50%, #00b8a9 100%);
+            overflow: hidden; display: flex; align-items: center;
+            padding: 0 40px; z-index: 10;
+        }
+        .site-header canvas { position: absolute; inset: 0; z-index: 0; }
+        .header-content { position: relative; z-index: 2; display: flex; align-items: center; gap: 20px; width: 100%; }
+        .header-logo {
+            width: 56px; height: 56px; background: rgba(255,255,255,0.15);
+            border-radius: 16px; display: flex; align-items: center; justify-content: center;
+            font-size: 28px; border: 1.5px solid rgba(255,255,255,0.3);
+            backdrop-filter: blur(4px); flex-shrink: 0;
+        }
+        .header-text h1 { color: #fff; font-size: 1.55em; font-weight: 700; letter-spacing: -0.5px; }
+        .header-text p  { color: rgba(255,255,255,0.72); font-size: 0.82em; margin-top: 2px; }
+        .header-nav { margin-left: auto; display: flex; gap: 10px; }
+        .header-nav a {
+            padding: 8px 20px; border-radius: 30px; font-size: 0.85em; font-weight: 500;
+            text-decoration: none; transition: 0.2s;
+            border: 1.5px solid rgba(255,255,255,0.35); color: #fff;
+            backdrop-filter: blur(4px); background: rgba(255,255,255,0.10);
+        }
+        .header-nav a:hover  { background: rgba(255,255,255,0.22); }
+        .header-nav a.active { background: rgba(255,255,255,0.25); border-color: rgba(255,255,255,0.7); }
+
+        /* ── 알림 벨 ── */
+        .notif-wrap { position: relative; display: flex; align-items: center; margin-left: 10px; }
+        .notif-bell {
+            background: rgba(255,255,255,0.12); border: 1.5px solid rgba(255,255,255,0.35);
+            border-radius: 50%; width: 38px; height: 38px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 16px; cursor: pointer; position: relative;
+            color: #fff; transition: background 0.2s;
+        }
+        .notif-bell:hover { background: rgba(255,255,255,0.25); }
+        @keyframes bell-shake {
+            0%, 60%, 100% { transform: rotate(0); }
+            10%, 30% { transform: rotate(15deg); }
+            20%, 40% { transform: rotate(-15deg); }
+        }
+        .notif-bell.has-notif { animation: bell-shake 3s ease-in-out 2s infinite; }
+        .notif-badge {
+            position: absolute; top: -4px; right: -4px;
+            background: #e74c3c; color: #fff; font-size: 0.65em; font-weight: 700;
+            min-width: 18px; height: 18px; border-radius: 9px; padding: 0 3px;
+            display: flex; align-items: center; justify-content: center; border: 2px solid #0d2d5e;
+        }
+        .notif-dropdown {
+            position: fixed; width: 280px;
+            background: rgba(255,255,255,0.95); backdrop-filter: blur(16px);
+            border-radius: 12px; box-shadow: 0 12px 40px rgba(0,0,0,0.22);
+            z-index: 9999; display: none; overflow: hidden; border: 1px solid rgba(255,255,255,0.6);
+        }
+        .notif-dropdown.open { display: block; animation: fadeDown 0.2s ease; }
+        @keyframes fadeDown {
+            from { opacity: 0; transform: translateY(-8px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .notif-title { padding: 13px 16px; font-size: 0.85em; font-weight: 700; color: #2d3748; border-bottom: 1px solid #e9ecef; background: #f8fafc; }
+        .notif-item { padding: 12px 16px; font-size: 0.84em; color: #2d3748; border-bottom: 1px solid #f1f3f5; display: flex; align-items: center; gap: 8px; }
+        .notif-item.warn { border-left: 3px solid #e74c3c; }
+        .notif-item.info { border-left: 3px solid #1a6fc4; }
+        .notif-empty { padding: 20px 16px; text-align: center; color: #6c757d; font-size: 0.84em; }
+        .notif-link { display: block; padding: 12px 16px; text-align: center; font-size: 0.84em; font-weight: 600; color: #1a6fc4; text-decoration: none; background: #f0f7ff; transition: background 0.15s; }
+        .notif-link:hover { background: #dceeff; }
+
+        /* ── 토스트 알림 ── */
+        #toast {
+            position: fixed; bottom: 30px; right: 30px;
+            padding: 14px 22px; border-radius: 12px;
+            font-size: 0.9em; font-weight: 600; color: #fff;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.25);
+            z-index: 99999;
+            display: flex; align-items: center; gap: 10px;
+            transform: translateY(80px); opacity: 0;
+            transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1), opacity 0.3s;
+            pointer-events: none; min-width: 220px;
+        }
+        #toast.show { transform: translateY(0); opacity: 1; }
+        #toast.toast-success { background: linear-gradient(135deg, #27ae60, #2ecc71); }
+        #toast.toast-warning { background: linear-gradient(135deg, #f39c12, #e67e22); }
+        #toast.toast-danger  { background: linear-gradient(135deg, #e74c3c, #c0392b); }
+        #toast.toast-info    { background: linear-gradient(135deg, #1a6fc4, #00b8a9); }
+
+        /* ── 커스텀 확인 모달 ── */
+        .modal-overlay {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,0.55); backdrop-filter: blur(6px);
+            z-index: 99998; align-items: center; justify-content: center;
+        }
+        .modal-overlay.open { display: flex; }
+        .modal-box {
+            background: #fff; border-radius: 20px;
+            padding: 36px 32px; max-width: 400px; width: 90%;
+            box-shadow: 0 24px 60px rgba(0,0,0,0.25); text-align: center;
+            animation: modalPop 0.35s cubic-bezier(0.34,1.56,0.64,1);
+        }
+        @keyframes modalPop {
+            from { transform: scale(0.75); opacity: 0; }
+            to   { transform: scale(1);    opacity: 1; }
+        }
+        .modal-icon { font-size: 3.2em; margin-bottom: 14px; line-height: 1; }
+        .modal-title { font-size: 1.15em; font-weight: 700; color: #2d3748; margin-bottom: 8px; }
+        .modal-desc { font-size: 0.87em; color: #6c757d; line-height: 1.6; margin-bottom: 26px; }
+        .modal-actions { display: flex; gap: 10px; justify-content: center; }
+
+        /* ── 스크롤 페이드인 ── */
+        .fade-up { opacity: 0; transform: translateY(24px); transition: opacity 0.55s ease, transform 0.55s ease; }
+        .fade-up.visible { opacity: 1; transform: translateY(0); }
+
+        /* ── 본문 ── */
+        .page-body { position: relative; z-index: 1; max-width: 1400px; margin: 0 auto; padding: 30px 24px 50px; }
+
+        /* ── 패널 ── */
+        .panel {
+            background: rgba(255,255,255,0.68); backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px); border: 1px solid rgba(255,255,255,0.55);
+            border-radius: var(--radius); box-shadow: var(--shadow-md);
+            margin-bottom: 22px; overflow: hidden; position: relative;
+        }
+        .panel > * { position: relative; z-index: 1; }
+        .panel::before {
+            content: ''; position: absolute; inset: 0; border-radius: inherit;
+            background: radial-gradient(500px circle at var(--glow-x, -300px) var(--glow-y, -300px), rgba(26,111,196,0.18), transparent 55%);
+            opacity: 0; transition: opacity 0.5s ease; pointer-events: none; z-index: 0;
+        }
+        .panel:hover::before { opacity: 1; }
+        .panel-header { padding: 16px 24px; border-bottom: 1px solid var(--gray-200); display: flex; align-items: center; gap: 10px; }
+        .panel-header h2 { font-size: 1em; font-weight: 700; color: var(--gray-800); }
+        .panel-icon { width: 30px; height: 30px; border-radius: 8px; background: var(--primary-light); display: flex; align-items: center; justify-content: center; font-size: 15px; }
+        .panel-body { padding: 20px 24px; }
+
+        /* ── 등록 폼 ── */
+        .reg-form-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr 1fr 1fr 2fr auto;
+            gap: 14px; align-items: end;
+        }
+        .form-group label {
+            display: block; font-size: 0.78em; font-weight: 600;
+            color: var(--gray-600); margin-bottom: 5px;
+            letter-spacing: 0.3px; text-transform: uppercase;
+        }
+        .form-group input,
+        .form-group select {
+            width: 100%; padding: 9px 12px;
+            border: 1.5px solid var(--gray-400); border-radius: 7px;
+            font-size: 0.92em; font-family: inherit;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            background: #fff; color: var(--text);
+        }
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none; border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(26,111,196,0.12);
+        }
+
+        /* ── 버튼 ── */
+        .btn {
+            display: inline-flex; align-items: center; gap: 5px;
+            padding: 9px 18px; border-radius: 7px;
+            font-size: 0.85em; font-weight: 600; font-family: inherit;
+            border: none; cursor: pointer; text-decoration: none;
+            transition: all 0.15s; white-space: nowrap; line-height: 1;
+            position: relative; overflow: hidden;
+            box-shadow: 0 5px 0 rgba(0,0,0,0.16), 0 7px 12px rgba(0,0,0,0.1);
+        }
+        .btn:active { transform: translateY(4px) !important; box-shadow: 0 1px 0 rgba(0,0,0,0.16), 0 2px 4px rgba(0,0,0,0.08) !important; }
+        .btn-primary   { background: var(--primary); color: #fff; }
+        .btn-primary:hover   { background: var(--primary-dark); transform: translateY(-1px); }
+        .btn-success   { background: var(--success); color: #fff; }
+        .btn-success:hover   { background: #219a52; transform: translateY(-1px); }
+        .btn-danger    { background: var(--danger); color: #fff; }
+        .btn-danger:hover    { background: #c0392b; transform: translateY(-1px); }
+        .btn-ghost     { background: transparent; color: var(--gray-600); border: 1.5px solid var(--gray-400); }
+        .btn-ghost:hover     { background: var(--gray-100); }
+        .btn-secondary { background: var(--gray-100); color: var(--gray-800); border: 1.5px solid var(--gray-400); }
+        .btn-secondary:hover { background: var(--gray-200); }
+        .btn-sm { padding: 5px 11px; font-size: 0.78em; border-radius: 5px; }
+
+        /* ── 필터바 ── */
+        .filter-wrap { display: flex; gap: 10px; align-items: center; margin-left: auto; }
+        .filter-wrap input[type="date"] {
+            padding: 8px 12px; border: 1.5px solid var(--gray-400); border-radius: 7px;
+            font-size: 0.88em; font-family: inherit; background: rgba(255,255,255,0.9); transition: 0.2s;
+        }
+        .filter-wrap input[type="date"]:focus { outline: none; border-color: var(--primary); }
+
+        /* ── 테이블 ── */
+        .data-table { width: 100%; border-collapse: collapse; }
+        .data-table thead th {
+            background: #f0f4f9; padding: 11px 14px;
+            font-size: 0.78em; font-weight: 700; color: var(--gray-600);
+            text-transform: uppercase; letter-spacing: 0.5px;
+            border-bottom: 2px solid var(--gray-200); text-align: left;
+        }
+        .data-table tbody tr { border-bottom: 1px solid var(--gray-200); transition: background 0.12s; opacity: 0; }
+        .data-table tbody tr:nth-child(even) { background: #fafbfc; }
+        .data-table tbody tr:hover { background: var(--primary-light); }
+        .data-table td { padding: 11px 14px; font-size: 0.9em; color: var(--text); vertical-align: middle; }
+
+        /* ── 오늘 행 강조 ── */
+        .today-row { background: #fffbeb !important; border-left: 3px solid var(--warning); }
+        .today-row:hover { background: #fef3c7 !important; }
+
+        /* ── 상태 뱃지 ── */
+        .badge {
+            display: inline-flex; align-items: center; gap: 4px;
+            padding: 3px 10px; border-radius: 20px;
+            font-size: 0.76em; font-weight: 700; white-space: nowrap;
+        }
+        .badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: 0.6; }
+        .badge-scheduled { background: #e3f0ff; color: #1a6fc4; }
+        .badge-completed  { background: #e3f9f0; color: #1e8449; }
+        .badge-cancelled  { background: #f0f0f0; color: #6c757d; }
+        @keyframes pulse-dot { 0%, 100% { transform: scale(1); opacity: 0.6; } 50% { transform: scale(1.9); opacity: 1; } }
+        .badge-scheduled::before { animation: pulse-dot 1.5s ease-in-out infinite; }
+
+        /* ── 액션 그룹 ── */
+        .action-group { display: flex; gap: 5px; flex-wrap: wrap; }
+
+        /* ── 페이지네이션 ── */
+        .pagination { display: flex; justify-content: center; align-items: center; gap: 5px; margin-top: 28px; }
+        .pagination a, .pagination span {
+            display: inline-flex; align-items: center; justify-content: center;
+            width: 36px; height: 36px; border-radius: 8px; font-size: 0.88em; font-weight: 600;
+            text-decoration: none; border: 1.5px solid var(--gray-400); color: var(--gray-800);
+            background: rgba(255,255,255,0.9); transition: 0.15s;
+        }
+        .pagination a:hover { background: var(--primary-light); border-color: var(--primary); color: var(--primary); }
+        .pagination .active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+        /* ── 빈 상태 ── */
+        .empty-state { text-align: center; padding: 40px; color: var(--gray-600); font-size: 0.92em; }
+        .empty-state .empty-icon { font-size: 2.5em; margin-bottom: 10px; }
+
+        /* ── Ripple ── */
+        @keyframes ripple-expand { to { width: 320px; height: 320px; opacity: 0; } }
+        .ripple-el { position: absolute; border-radius: 50%; background: rgba(255,255,255,0.38); width: 0; height: 0; transform: translate(-50%, -50%); animation: ripple-expand 0.6s linear; pointer-events: none; }
+
+        /* ── 슬라이드인 ── */
+        @keyframes slideInRow { from { opacity: 0; transform: translateX(-18px); } to { opacity: 1; transform: translateX(0); } }
+
+        /* ── 반응형 ── */
+        @media (max-width: 1200px) {
+            .reg-form-grid { grid-template-columns: 1fr 1fr 1fr; }
+        }
+        @media (max-width: 768px) {
+            .site-header { height: auto; padding: 14px 16px; }
+            .header-content { flex-wrap: wrap; gap: 10px; }
+            .header-nav {
+                order: 3; width: 100%; margin-left: 0; margin-top: 4px;
+                justify-content: center; flex-wrap: wrap; gap: 6px;
+            }
+            .header-nav a { padding: 6px 14px; font-size: 0.8em; }
+            .notif-wrap { margin-left: auto; }
+
+            .page-body { padding: 20px 14px 40px; }
+
+            .reg-form-grid { grid-template-columns: 1fr 1fr; }
+            .panel-header { flex-wrap: wrap; gap: 8px; }
+            .filter-wrap { width: 100%; margin-left: 0; }
+            .filter-wrap form { flex-wrap: wrap; width: 100%; }
+            .filter-wrap input[type="date"] { flex: 1; }
+
+            .panel { overflow-x: auto; }
+            .panel::before { display: none; }
+            .data-table { min-width: 640px; }
+
+            .action-group { flex-wrap: nowrap; }
+            .btn-sm { padding: 4px 9px; font-size: 0.76em; }
+        }
+        @media (max-width: 480px) {
+            .header-text { display: none; }
+            .header-logo { width: 44px; height: 44px; font-size: 22px; }
+            .reg-form-grid { grid-template-columns: 1fr; }
+            .panel-body { padding: 14px; }
+            .panel-header { padding: 12px 14px; }
+        }
+    </style>
+</head>
+<body>
+
+<header class="site-header">
+    <canvas id="particleCanvas"></canvas>
+    <div class="header-content">
+        <div class="header-logo">🏥</div>
+        <div class="header-text">
+            <h1>스마트 병원 관리 시스템</h1>
+            <p>Smart Hospital Management System</p>
+        </div>
+        <nav class="header-nav">
+            <a href="/patients">👥 환자 목록</a>
+            <a href="/appointments" class="active">📅 예약 관리</a>
+            <a href="/patients/dashboard">📊 대시보드</a>
+        </nav>
+        <div class="notif-wrap">
+            <button th:class="${notifCount > 0} ? 'notif-bell has-notif' : 'notif-bell'" onclick="toggleNotif(event)">
+                🔔
+                <span class="notif-badge" th:if="${notifCount > 0}" th:text="${notifCount}"></span>
+            </button>
+            <div class="notif-dropdown" id="notifDropdown">
+                <div class="notif-title">🔔 알림</div>
+                <div class="notif-item warn" th:if="${notifUnpaid > 0}">
+                    💳 수납 미완료 <strong th:text="${notifUnpaid}"></strong>명
+                </div>
+                <div class="notif-item info" th:if="${notifTodayAppts > 0}">
+                    📅 오늘 예약 <strong th:text="${notifTodayAppts}"></strong>건 대기
+                </div>
+                <div class="notif-empty" th:if="${notifCount == 0}">새 알림이 없습니다</div>
+                <a href="/appointments" class="notif-link">📋 예약 관리 바로가기</a>
+            </div>
+        </div>
+    </div>
+</header>
+
+<div class="page-body">
+
+    <!-- 예약 등록 폼 -->
+    <div class="panel">
+        <div class="panel-header">
+            <div class="panel-icon">📅</div>
+            <h2>신규 예약 등록</h2>
+        </div>
+        <div class="panel-body">
+            <form th:action="@{/appointments}" method="post">
+                <div class="reg-form-grid">
+                    <div class="form-group">
+                        <label>환자 선택</label>
+                        <select name="patientId" required>
+                            <option value="">-- 환자 선택 --</option>
+                            <option th:each="p : ${patients}"
+                                    th:value="${p.id}"
+                                    th:text="${p.name + ' (' + p.disease + ')'}">환자</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>예약 날짜</label>
+                        <input type="date" name="appointmentDate" required />
+                    </div>
+                    <div class="form-group">
+                        <label>예약 시간</label>
+                        <input type="time" name="appointmentTime" required />
+                    </div>
+                    <div class="form-group">
+                        <label>담당 의사</label>
+                        <input type="text" name="doctorName" placeholder="의사 이름" required />
+                    </div>
+                    <div class="form-group">
+                        <label>방문 목적</label>
+                        <input type="text" name="purpose" placeholder="정기 검진, 추적 관찰 등" required />
+                    </div>
+                    <div>
+                        <button type="submit" class="btn btn-primary">✚ 등록</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 예약 목록 -->
+    <div class="panel">
+        <div class="panel-header">
+            <div class="panel-icon">📋</div>
+            <h2>예약 목록</h2>
+            <span style="font-size:0.82em; color:var(--gray-600); margin-left:8px;"
+                  th:if="${notifTodayAppts > 0}">
+                📌 오늘 예약 <strong th:text="${notifTodayAppts}" style="color:var(--warning)"></strong>건
+            </span>
+            <div class="filter-wrap">
+                <form th:action="@{/appointments}" method="get" style="display:flex; gap:8px; align-items:center;">
+                    <input type="date" name="date" th:value="${filterDate}" />
+                    <button type="submit" class="btn btn-primary btn-sm">🔍 필터</button>
+                    <a th:href="@{/appointments}" class="btn btn-secondary btn-sm">초기화</a>
+                </form>
+            </div>
+        </div>
+
+        <div th:if="${!appointments.content.isEmpty()}">
+            <table class="data-table">
+                <thead>
+                <tr>
+                    <th style="width:55px">NO</th>
+                    <th>환자명</th>
+                    <th style="width:115px">예약일</th>
+                    <th style="width:75px">시간</th>
+                    <th style="width:105px">담당 의사</th>
+                    <th>방문 목적</th>
+                    <th style="width:90px">상태</th>
+                    <th style="width:210px; text-align:center">관리</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="a : ${appointments.content}"
+                    th:class="${a.appointmentDate.equals(today)} ? 'today-row' : ''">
+                    <td style="color:#6c757d; font-size:0.82em; font-family:monospace;" th:text="${a.id}">1</td>
+                    <td>
+                        <a th:href="@{/patients/{id}(id=${a.patient.id})}" th:text="${a.patient.name}"
+                           style="color:var(--primary); font-weight:600; text-decoration:none;">환자명</a>
+                    </td>
+                    <td th:text="${a.appointmentDate}"
+                        th:style="${a.appointmentDate.equals(today)} ? 'font-weight:700; color:var(--warning)' : ''">날짜</td>
+                    <td th:text="${a.appointmentTime}">시간</td>
+                    <td th:text="${a.doctorName}">의사</td>
+                    <td th:text="${a.purpose}">목적</td>
+                    <td>
+                        <span th:if="${a.status.name() == 'SCHEDULED'}"  class="badge badge-scheduled"  th:text="${a.status.displayName}">예약됨</span>
+                        <span th:if="${a.status.name() == 'COMPLETED'}"  class="badge badge-completed"  th:text="${a.status.displayName}">완료</span>
+                        <span th:if="${a.status.name() == 'CANCELLED'}"  class="badge badge-cancelled"  th:text="${a.status.displayName}">취소됨</span>
+                    </td>
+                    <td>
+                        <div class="action-group" style="justify-content:center;">
+                            <a th:if="${a.status.name() == 'SCHEDULED'}"
+                               th:href="@{/appointments/complete/{id}(id=${a.id})}"
+                               class="btn btn-success btn-sm">✔ 완료</a>
+                            <a th:if="${a.status.name() == 'SCHEDULED'}"
+                               th:href="@{/appointments/cancel/{id}(id=${a.id})}"
+                               class="btn btn-ghost btn-sm"
+                               onclick="showModal(this.href,'예약 취소','해당 예약을 취소 상태로 변경합니다.','btn-ghost'); return false;">✕ 취소</a>
+                            <a th:href="@{/appointments/delete/{id}(id=${a.id})}"
+                               class="btn btn-danger btn-sm"
+                               onclick="showModal(this.href,'🗑 예약 삭제','예약이 영구 삭제됩니다.','btn-danger'); return false;">🗑</a>
+                        </div>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+
+            <div style="padding: 16px 24px; border-top: 1px solid var(--gray-200);">
+                <div class="pagination" th:if="${appointments.totalPages > 0}">
+                    <a th:href="@{/appointments(page=${appointments.number - 1}, date=${filterDate})}" th:if="${!appointments.first}">‹</a>
+                    <span th:each="i : ${#numbers.sequence(0, appointments.totalPages - 1)}">
+                        <a th:href="@{/appointments(page=${i}, date=${filterDate})}" th:text="${i + 1}"
+                           th:class="${i == appointments.number} ? 'active' : ''"></a>
+                    </span>
+                    <a th:href="@{/appointments(page=${appointments.number + 1}, date=${filterDate})}" th:if="${!appointments.last}">›</a>
+                </div>
+            </div>
+        </div>
+
+        <div th:if="${appointments.content.isEmpty()}" class="empty-state">
+            <div class="empty-icon">📅</div>
+            <p>예약 내역이 없습니다.</p>
+        </div>
+    </div>
+
+</div>
+
+<script>
+(function() {
+    // ── Ripple
+    document.querySelectorAll('.btn').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            var rect = this.getBoundingClientRect();
+            var el = document.createElement('span');
+            el.className = 'ripple-el';
+            el.style.left = (e.clientX - rect.left) + 'px';
+            el.style.top  = (e.clientY - rect.top)  + 'px';
+            this.appendChild(el);
+            setTimeout(function() { el.remove(); }, 650);
+        });
+    });
+    // ── 패널 Glow
+    document.querySelectorAll('.panel').forEach(function(card) {
+        card.addEventListener('mousemove', function(e) {
+            var r = this.getBoundingClientRect();
+            this.style.setProperty('--glow-x', (e.clientX - r.left) + 'px');
+            this.style.setProperty('--glow-y', (e.clientY - r.top)  + 'px');
+        });
+    });
+    // ── 테이블 슬라이드인
+    document.querySelectorAll('.data-table tbody tr').forEach(function(tr, i) {
+        tr.style.animation = 'slideInRow 0.35s ease ' + (i * 0.07) + 's forwards';
+    });
+})();
+
+// ── 토스트
+function showToast(msg, type) {
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast-' + (type || 'success') + ' show';
+    clearTimeout(t._timer);
+    t._timer = setTimeout(function() { t.classList.remove('show'); }, 3500);
+}
+(function() {
+    var td = document.getElementById('toast-data');
+    if (td) setTimeout(function() { showToast(td.dataset.msg, td.dataset.type); }, 400);
+})();
+
+// ── 커스텀 모달
+function showModal(url, title, desc, btnClass) {
+    document.getElementById('modalTitle').textContent = title;
+    document.getElementById('modalDesc').textContent = desc;
+    document.getElementById('modalConfirmBtn').href = url;
+    document.getElementById('modalConfirmBtn').className = 'btn ' + (btnClass || 'btn-danger');
+    document.getElementById('confirmModal').classList.add('open');
+}
+function closeModal() { document.getElementById('confirmModal').classList.remove('open'); }
+
+// ── 스크롤 페이드인
+(function() {
+    var obs = new IntersectionObserver(function(entries) {
+        entries.forEach(function(e) {
+            if (e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target); }
+        });
+    }, { threshold: 0.07 });
+    document.querySelectorAll('.panel').forEach(function(el, i) {
+        el.classList.add('fade-up');
+        el.style.transitionDelay = (i * 0.1) + 's';
+        obs.observe(el);
+    });
+})();
+
+function toggleNotif(e) {
+    e.stopPropagation();
+    var dropdown = document.getElementById('notifDropdown');
+    var bell = e.currentTarget;
+    var rect = bell.getBoundingClientRect();
+    dropdown.style.top   = (rect.bottom + 8) + 'px';
+    dropdown.style.right = (window.innerWidth - rect.right) + 'px';
+    dropdown.classList.toggle('open');
+}
+document.addEventListener('click', function() {
+    var d = document.getElementById('notifDropdown');
+    if (d) d.classList.remove('open');
+});
+</script>
+
+<!-- 토스트 -->
+<div id="toast"></div>
+<div id="toast-data" th:if="${toast}" th:attr="data-msg=${toast},data-type=${toastType}" style="display:none"></div>
+
+<!-- 확인 모달 -->
+<div class="modal-overlay" id="confirmModal" onclick="if(event.target===this)closeModal()">
+    <div class="modal-box">
+        <div class="modal-icon">⚠️</div>
+        <div class="modal-title" id="modalTitle">확인</div>
+        <div class="modal-desc" id="modalDesc">계속하시겠습니까?</div>
+        <div class="modal-actions">
+            <a id="modalConfirmBtn" href="#" class="btn btn-danger">확인</a>
+            <button onclick="closeModal()" class="btn btn-secondary">취소</button>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    const canvas = document.getElementById('particleCanvas');
+    const ctx = canvas.getContext('2d');
+    let W, H, particles = [];
+    function resize() { W = canvas.width = canvas.offsetWidth; H = canvas.height = canvas.offsetHeight; }
+    function Particle() {
+        this.x = Math.random() * W; this.y = Math.random() * H;
+        this.vx = (Math.random() - 0.5) * 0.7; this.vy = (Math.random() - 0.5) * 0.7;
+        this.r = Math.random() * 2 + 1; this.alpha = Math.random() * 0.5 + 0.2;
+    }
+    Particle.prototype.update = function() {
+        this.x += this.vx; this.y += this.vy;
+        if (this.x < 0) this.x = W; if (this.x > W) this.x = 0;
+        if (this.y < 0) this.y = H; if (this.y > H) this.y = 0;
+    };
+    function init() { particles = []; for (let i = 0; i < 80; i++) particles.push(new Particle()); }
+    function draw() {
+        ctx.clearRect(0, 0, W, H);
+        const t = Date.now() / 1000;
+        for (let w = 0; w < 3; w++) {
+            ctx.beginPath();
+            ctx.strokeStyle = `rgba(255,255,255,${0.07 + w * 0.04})`;
+            ctx.lineWidth = 1.5 - w * 0.3;
+            for (let x = 0; x <= W; x += 4) {
+                const y = H * 0.5 + Math.sin((x / W) * Math.PI * 3 + t * (0.6 + w * 0.3)) * (18 + w * 12) + w * 20;
+                x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+        }
+        for (let i = 0; i < particles.length; i++) {
+            const p = particles[i]; p.update();
+            ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(255,255,255,${p.alpha})`; ctx.fill();
+            for (let j = i + 1; j < particles.length; j++) {
+                const q = particles[j];
+                const dx = p.x - q.x, dy = p.y - q.y, dist = Math.sqrt(dx*dx + dy*dy);
+                if (dist < 80) {
+                    ctx.beginPath();
+                    ctx.strokeStyle = `rgba(255,255,255,${0.12 * (1 - dist/80)})`;
+                    ctx.lineWidth = 0.6; ctx.moveTo(p.x, p.y); ctx.lineTo(q.x, q.y); ctx.stroke();
+                }
+            }
+        }
+        requestAnimationFrame(draw);
+    }
+    window.addEventListener('resize', function() { resize(); init(); });
+    resize(); init(); draw();
+})();
+</script>
+</body>
+</html>

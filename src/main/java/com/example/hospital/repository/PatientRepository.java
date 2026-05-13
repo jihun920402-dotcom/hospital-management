@@ -13,4 +13,6 @@ public interface PatientRepository extends JpaRepository<Patient, Long> {
     long countByStatus(PatientStatus status);
     // 수납 미완료 환자 수
     long countByIsPaidFalse();
+    // 진료 완료 후 수납 미완료 환자 수 (알림용)
+    long countByIsPaidFalseAndStatus(PatientStatus status);
 }

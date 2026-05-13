@@ -2,145 +2,906 @@
 <html xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title>환자 관리 시스템 - 목록</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>환자 관리 시스템</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Malgun Gothic', sans-serif; padding: 20px; line-height: 1.6; }
-        .container { max-width: 1400px; margin: 0 auto; }
-        .header-area { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #333; padding-bottom: 10px; }
+        :root {
+            --primary: #1a6fc4;
+            --primary-dark: #155a9e;
+            --primary-light: #e8f1fb;
+            --accent: #00b8a9;
+            --danger: #e74c3c;
+            --warning: #f39c12;
+            --success: #27ae60;
+            --gray-50: #f8f9fa;
+            --gray-100: #f1f3f5;
+            --gray-200: #e9ecef;
+            --gray-400: #ced4da;
+            --gray-600: #6c757d;
+            --gray-800: #343a40;
+            --text: #2d3748;
+            --shadow-sm: 0 1px 3px rgba(0,0,0,0.08);
+            --shadow-md: 0 4px 16px rgba(0,0,0,0.10);
+            --shadow-lg: 0 8px 32px rgba(0,0,0,0.13);
+            --radius: 10px;
+        }
 
-        .input-form { background-color: #f9f9f9; padding: 20px; border-radius: 8px; margin-bottom: 25px; border: 1px solid #ddd; }
-        .input-form div { display: inline-block; margin-right: 15px; vertical-align: top; }
-        .input-form label { display: block; margin-bottom: 5px; font-weight: bold; color: #555; }
-        .input-form input, .input-form select { padding: 10px; border: 1px solid #ccc; border-radius: 4px; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
 
-        .search-form { margin-bottom: 20px; text-align: right; }
-        .search-form input { padding: 8px; width: 250px; border: 1px solid #ccc; border-radius: 4px; }
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background:
+                radial-gradient(ellipse 80% 70% at 0% 0%,   #c7dcf8 0%, transparent 55%),
+                radial-gradient(ellipse 60% 55% at 100% 0%, #b8f0ea 0%, transparent 55%),
+                radial-gradient(ellipse 70% 60% at 60% 100%,#cde4f9 0%, transparent 55%),
+                radial-gradient(ellipse 50% 45% at 30% 60%, #daeeff 0%, transparent 50%),
+                #e8f1fc;
+            background-attachment: fixed;
+            min-height: 100vh;
+            color: var(--text);
+        }
+        body::before { display: none; }
 
-        /* 버튼 스타일 */
-        .btn { padding: 8px 15px; text-decoration: none; border-radius: 4px; border: none; cursor: pointer; display: inline-block; font-size: 0.9em; transition: 0.3s; }
-        .btn-save { background-color: #007bff; color: white; }
-        .btn-edit { background-color: #ffc107; color: black; }
-        .btn-delete { background-color: #dc3545; color: white; }
-        .btn-dashboard { background-color: #343a40; color: white; font-weight: bold; }
-        .btn-action { background-color: #17a2b8; color: white; }
-        .btn-pay { background-color: #28a745; color: white; }
-        .btn:hover { opacity: 0.8; }
+        /* ── 상단 헤더 (파티클 애니메이션) ── */
+        .site-header {
+            position: relative;
+            height: 130px;
+            background: linear-gradient(135deg, #0d2d5e 0%, #1a6fc4 50%, #00b8a9 100%);
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            padding: 0 40px;
+            z-index: 10;
+        }
+        .site-header canvas {
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+        }
+        .header-content {
+            position: relative;
+            z-index: 2;
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            width: 100%;
+        }
+        .header-logo {
+            width: 56px; height: 56px;
+            background: rgba(255,255,255,0.15);
+            border-radius: 16px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 28px;
+            border: 1.5px solid rgba(255,255,255,0.3);
+            backdrop-filter: blur(4px);
+            flex-shrink: 0;
+        }
+        .header-text h1 {
+            color: #fff;
+            font-size: 1.55em;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+        .header-text p {
+            color: rgba(255,255,255,0.72);
+            font-size: 0.82em;
+            margin-top: 2px;
+        }
+        .header-nav {
+            margin-left: auto;
+            display: flex;
+            gap: 10px;
+        }
+        .header-nav a {
+            padding: 8px 20px;
+            border-radius: 30px;
+            font-size: 0.85em;
+            font-weight: 500;
+            text-decoration: none;
+            transition: 0.2s;
+            border: 1.5px solid rgba(255,255,255,0.35);
+            color: #fff;
+            backdrop-filter: blur(4px);
+            background: rgba(255,255,255,0.10);
+        }
+        .header-nav a:hover { background: rgba(255,255,255,0.22); }
+        .header-nav a.active { background: rgba(255,255,255,0.25); border-color: rgba(255,255,255,0.7); }
 
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        th, td { border: 1px solid #ddd; padding: 12px; text-align: left; }
-        th { background-color: #f4f4f4; font-weight: bold; }
-        tr:hover { background-color: #f8f9fa; }
+        /* ── 본문 컨테이너 ── */
+        .page-body {
+            position: relative;
+            z-index: 1;
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 30px 24px 50px;
+        }
 
-        .pagination { text-align: center; margin-top: 30px; }
-        .pagination a { padding: 10px 15px; border: 1px solid #ddd; text-decoration: none; color: #333; margin: 0 2px; border-radius: 4px; }
-        .pagination .active { background-color: #007bff; color: white; border-color: #007bff; }
+        /* ── 카드 패널 ── */
+        .panel {
+            background: rgba(255,255,255,0.68);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            border: 1px solid rgba(255,255,255,0.55);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-md);
+            margin-bottom: 22px;
+            overflow: hidden;
+        }
+        .panel-header {
+            padding: 16px 24px;
+            border-bottom: 1px solid var(--gray-200);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .panel-header h2 {
+            font-size: 1em;
+            font-weight: 700;
+            color: var(--gray-800);
+        }
+        .panel-header .panel-icon {
+            width: 30px; height: 30px;
+            border-radius: 8px;
+            background: var(--primary-light);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 15px;
+        }
+        .panel-body { padding: 20px 24px; }
 
-        .status-hosp { color: purple; font-weight: bold; }
-        .status-dis { color: gray; }
-        .pay-done { color: green; font-weight: bold; }
-        .pay-not { color: red; font-weight: bold; }
+        /* ── 환자 등록 폼 ── */
+        .reg-form-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr) auto auto;
+            gap: 14px;
+            align-items: end;
+        }
+        .form-group label {
+            display: block;
+            font-size: 0.78em;
+            font-weight: 600;
+            color: var(--gray-600);
+            margin-bottom: 5px;
+            letter-spacing: 0.3px;
+            text-transform: uppercase;
+        }
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 9px 12px;
+            border: 1.5px solid var(--gray-400);
+            border-radius: 7px;
+            font-size: 0.92em;
+            font-family: inherit;
+            transition: border-color 0.2s, box-shadow 0.2s;
+            background: #fff;
+            color: var(--text);
+        }
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(26,111,196,0.12);
+        }
+
+        /* ── 버튼 ── */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            padding: 9px 18px;
+            border-radius: 7px;
+            font-size: 0.85em;
+            font-weight: 600;
+            font-family: inherit;
+            border: none;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.15s;
+            white-space: nowrap;
+            line-height: 1;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 5px 0 rgba(0,0,0,0.16), 0 7px 12px rgba(0,0,0,0.1);
+        }
+        .btn:active {
+            transform: translateY(4px) !important;
+            box-shadow: 0 1px 0 rgba(0,0,0,0.16), 0 2px 4px rgba(0,0,0,0.08) !important;
+        }
+        .btn-primary   { background: var(--primary); color: #fff; }
+        .btn-primary:hover { background: var(--primary-dark); transform: translateY(-1px); box-shadow: var(--shadow-sm); }
+        .btn-secondary { background: var(--gray-100); color: var(--gray-800); border: 1.5px solid var(--gray-400); }
+        .btn-secondary:hover { background: var(--gray-200); }
+        .btn-success   { background: var(--success); color: #fff; }
+        .btn-success:hover { background: #219a52; transform: translateY(-1px); }
+        .btn-warning   { background: var(--warning); color: #fff; }
+        .btn-warning:hover { background: #d68910; transform: translateY(-1px); }
+        .btn-danger    { background: var(--danger); color: #fff; }
+        .btn-danger:hover { background: #c0392b; transform: translateY(-1px); }
+        .btn-info      { background: var(--accent); color: #fff; }
+        .btn-info:hover { background: #009d8f; transform: translateY(-1px); }
+        .btn-ghost     { background: transparent; color: var(--gray-600); border: 1.5px solid var(--gray-400); }
+        .btn-ghost:hover { background: var(--gray-100); }
+        .btn-sm { padding: 5px 11px; font-size: 0.78em; border-radius: 5px; }
+
+        /* ── 검색바 ── */
+        .search-bar {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            margin-left: auto;
+        }
+        .search-input-wrap {
+            position: relative;
+        }
+        .search-input-wrap input {
+            padding: 8px 14px 8px 36px;
+            border: 1.5px solid var(--gray-400);
+            border-radius: 7px;
+            font-size: 0.88em;
+            font-family: inherit;
+            width: 240px;
+            transition: 0.2s;
+        }
+        .search-input-wrap input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(26,111,196,0.12); }
+        .search-icon {
+            position: absolute;
+            left: 11px; top: 50%;
+            transform: translateY(-50%);
+            color: var(--gray-600);
+            font-size: 14px;
+        }
+        .toolbar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 14px;
+        }
+        .toolbar-title {
+            font-size: 0.88em;
+            color: var(--gray-600);
+        }
+        .toolbar-title strong { color: var(--text); }
+
+        /* ── 테이블 ── */
+        .data-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .data-table thead th {
+            background: #f0f4f9;
+            padding: 11px 14px;
+            font-size: 0.78em;
+            font-weight: 700;
+            color: var(--gray-600);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 2px solid var(--gray-200);
+            white-space: nowrap;
+            text-align: left;
+        }
+        .data-table tbody tr {
+            border-bottom: 1px solid var(--gray-200);
+            transition: background 0.12s;
+        }
+        .data-table tbody tr:nth-child(even) { background: #fafbfc; }
+        .data-table tbody tr:hover { background: var(--primary-light); }
+        .data-table td {
+            padding: 11px 14px;
+            font-size: 0.9em;
+            color: var(--text);
+            vertical-align: middle;
+        }
+        .patient-name-link {
+            color: var(--primary);
+            font-weight: 600;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .patient-name-link:hover { text-decoration: underline; }
+
+        /* ── 상태 뱃지 ── */
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.76em;
+            font-weight: 700;
+            white-space: nowrap;
+        }
+        .badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; opacity: 0.6; }
+        .badge-waiting    { background: #e3f0ff; color: #1a6fc4; }
+        .badge-inprogress { background: #fff4e3; color: #d68910; }
+        .badge-completed  { background: #e3f9f0; color: #1e8449; }
+        .badge-hosp       { background: #f3e8ff; color: #7d3c98; }
+        .badge-discharged { background: #f0f0f0; color: #6c757d; }
+
+        /* ── 수납 뱃지 ── */
+        .pay-badge { display: inline-flex; align-items: center; gap: 4px; font-size: 0.82em; font-weight: 700; }
+        .pay-done { color: var(--success); }
+        .pay-not  { color: var(--danger); }
+
+        /* ── 액션 버튼 그룹 ── */
+        .action-group { display: flex; gap: 5px; flex-wrap: wrap; }
+
+        /* ── 페이지네이션 ── */
+        .pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 5px;
+            margin-top: 28px;
+        }
+        .pagination a, .pagination span {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px; height: 36px;
+            border-radius: 8px;
+            font-size: 0.88em;
+            font-weight: 600;
+            text-decoration: none;
+            border: 1.5px solid var(--gray-400);
+            color: var(--gray-800);
+            background: rgba(255,255,255,0.9);
+            transition: 0.15s;
+        }
+        .pagination a:hover { background: var(--primary-light); border-color: var(--primary); color: var(--primary); }
+        .pagination .active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+        /* ── ID 셀 ── */
+        .id-cell { color: var(--gray-600); font-size: 0.82em; font-family: monospace; }
+        .date-cell { color: var(--gray-600); font-size: 0.85em; white-space: nowrap; }
+        .dash { color: var(--gray-400); }
+
+        /* ── Ripple ── */
+        @keyframes ripple-expand {
+            to { width: 320px; height: 320px; opacity: 0; }
+        }
+        .ripple-el {
+            position: absolute; border-radius: 50%;
+            background: rgba(255,255,255,0.38);
+            width: 0; height: 0;
+            transform: translate(-50%, -50%);
+            animation: ripple-expand 0.6s linear;
+            pointer-events: none;
+        }
+
+        /* ── 뱃지 펄스 ── */
+        @keyframes pulse-dot {
+            0%, 100% { transform: scale(1); opacity: 0.6; }
+            50% { transform: scale(1.9); opacity: 1; }
+        }
+        .badge-waiting::before    { animation: pulse-dot 2s ease-in-out infinite; }
+        .badge-inprogress::before { animation: pulse-dot 1.2s ease-in-out infinite; }
+
+        /* ── 테이블 행 슬라이드인 ── */
+        @keyframes slideInRow {
+            from { opacity: 0; transform: translateX(-18px); }
+            to   { opacity: 1; transform: translateX(0); }
+        }
+        .data-table tbody tr { opacity: 0; }
+
+        /* ── 패널 Glow ── */
+        .panel { position: relative; }
+        .panel > * { position: relative; z-index: 1; }
+        .panel::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            border-radius: inherit;
+            background: radial-gradient(
+                500px circle at var(--glow-x, -300px) var(--glow-y, -300px),
+                rgba(26,111,196,0.18),
+                transparent 55%
+            );
+            opacity: 0;
+            transition: opacity 0.5s ease;
+            pointer-events: none;
+            z-index: 0;
+        }
+        .panel:hover::before { opacity: 1; }
+
+        /* ── 알림 벨 ── */
+        .notif-wrap { position: relative; display: flex; align-items: center; }
+        .notif-bell {
+            background: rgba(255,255,255,0.15);
+            border: 1.5px solid rgba(255,255,255,0.35);
+            border-radius: 50%;
+            width: 40px; height: 40px;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            position: relative;
+            transition: background 0.2s;
+            color: #fff;
+            backdrop-filter: blur(4px);
+        }
+        .notif-bell:hover { background: rgba(255,255,255,0.28); }
+        .notif-bell.has-notif { animation: bell-shake 1.5s ease-in-out infinite; }
+        @keyframes bell-shake {
+            0%, 100% { transform: rotate(0); }
+            10%, 30%, 50% { transform: rotate(-12deg); }
+            20%, 40%      { transform: rotate(12deg); }
+            60%           { transform: rotate(0); }
+        }
+        .notif-badge {
+            position: absolute; top: -4px; right: -4px;
+            background: var(--danger); color: #fff;
+            font-size: 0.65em; font-weight: 700;
+            border-radius: 50%;
+            min-width: 18px; height: 18px;
+            display: flex; align-items: center; justify-content: center;
+            border: 2px solid #1a6fc4;
+            animation: pulse-badge 1.5s ease-in-out infinite;
+        }
+        @keyframes pulse-badge {
+            0%, 100% { transform: scale(1); }
+            50%       { transform: scale(1.2); }
+        }
+        .notif-dropdown {
+            display: none;
+            position: fixed;
+            background: rgba(255,255,255,0.97);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(0,0,0,0.1);
+            border-radius: 12px;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.15);
+            min-width: 240px;
+            z-index: 9999;
+            overflow: hidden;
+        }
+        .notif-dropdown.open { display: block; }
+        .notif-title { padding: 13px 16px 10px; font-size: 0.88em; font-weight: 700; color: var(--gray-800); border-bottom: 1px solid var(--gray-200); }
+        .notif-item { padding: 11px 16px; font-size: 0.85em; color: var(--text); border-bottom: 1px solid var(--gray-200); }
+        .notif-item.warn { background: #fff8f0; color: #c0392b; }
+        .notif-item.info { background: #f0f8ff; color: var(--primary); }
+        .notif-empty { padding: 14px 16px; font-size: 0.83em; color: var(--gray-600); text-align: center; }
+        .notif-link { display: block; padding: 11px 16px; font-size: 0.85em; font-weight: 600; color: var(--primary); text-decoration: none; background: var(--primary-light); text-align: center; }
+        .notif-link:hover { background: #d0e4f7; }
+
+        /* ── 토스트 알림 ── */
+        #toast {
+            position: fixed; bottom: 30px; right: 30px;
+            padding: 14px 22px; border-radius: 12px;
+            font-size: 0.9em; font-weight: 600; color: #fff;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.25);
+            z-index: 99999;
+            display: flex; align-items: center; gap: 10px;
+            transform: translateY(80px); opacity: 0;
+            transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1), opacity 0.3s;
+            pointer-events: none; min-width: 220px;
+        }
+        #toast.show { transform: translateY(0); opacity: 1; }
+        #toast.toast-success { background: linear-gradient(135deg, #27ae60, #2ecc71); }
+        #toast.toast-warning { background: linear-gradient(135deg, #f39c12, #e67e22); }
+        #toast.toast-danger  { background: linear-gradient(135deg, #e74c3c, #c0392b); }
+        #toast.toast-info    { background: linear-gradient(135deg, #1a6fc4, #00b8a9); }
+
+        /* ── 커스텀 확인 모달 ── */
+        .modal-overlay {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,0.55); backdrop-filter: blur(6px);
+            z-index: 99998; align-items: center; justify-content: center;
+        }
+        .modal-overlay.open { display: flex; }
+        .modal-box {
+            background: #fff; border-radius: 20px;
+            padding: 36px 32px; max-width: 400px; width: 90%;
+            box-shadow: 0 24px 60px rgba(0,0,0,0.25); text-align: center;
+            animation: modalPop 0.35s cubic-bezier(0.34,1.56,0.64,1);
+        }
+        @keyframes modalPop {
+            from { transform: scale(0.75); opacity: 0; }
+            to   { transform: scale(1);    opacity: 1; }
+        }
+        .modal-icon { font-size: 3.2em; margin-bottom: 14px; line-height: 1; }
+        .modal-title { font-size: 1.15em; font-weight: 700; color: #2d3748; margin-bottom: 8px; }
+        .modal-desc { font-size: 0.87em; color: #6c757d; line-height: 1.6; margin-bottom: 26px; }
+        .modal-actions { display: flex; gap: 10px; justify-content: center; }
+
+        /* ── 스크롤 페이드인 ── */
+        .fade-up { opacity: 0; transform: translateY(24px); transition: opacity 0.55s ease, transform 0.55s ease; }
+        .fade-up.visible { opacity: 1; transform: translateY(0); }
+
+        /* ════ RESPONSIVE ════ */
+        @media (max-width: 1024px) {
+            .reg-form-grid { grid-template-columns: 1fr 1fr 1fr; }
+        }
+        @media (max-width: 768px) {
+            .site-header { height: auto; padding: 14px 16px; }
+            .header-content { flex-wrap: wrap; }
+            .header-logo { width: 40px; height: 40px; font-size: 20px; }
+            .header-text h1 { font-size: 1.05em; }
+            .header-text p { display: none; }
+            .header-nav {
+                order: 3; width: 100%; margin-left: 0;
+                margin-top: 10px; justify-content: center; flex-wrap: wrap; gap: 6px;
+            }
+            .header-nav a { padding: 6px 12px; font-size: 0.78em; }
+            .notif-wrap { margin-left: auto; }
+
+            .page-body { padding: 14px 12px 40px; }
+            .panel-body { padding: 14px; }
+            .panel-header { padding: 12px 14px; flex-wrap: wrap; gap: 8px; }
+            .panel { overflow-x: auto; }
+            .panel::before { display: none; }
+
+            .reg-form-grid { grid-template-columns: 1fr 1fr; gap: 10px; }
+            .data-table { min-width: 640px; }
+            .toolbar { flex-wrap: wrap; justify-content: flex-end; gap: 8px; }
+            .search-input-wrap input { width: 170px; }
+            .action-group { gap: 4px; }
+            .btn-sm { padding: 4px 9px; font-size: 0.74em; }
+            .pagination a, .pagination span { width: 30px; height: 30px; font-size: 0.82em; }
+        }
+        @media (max-width: 480px) {
+            .reg-form-grid { grid-template-columns: 1fr; }
+            .header-text { display: none; }
+            .search-input-wrap input { width: 130px; }
+        }
     </style>
 </head>
 <body>
-<div class="container">
-    <div class="header-area">
-        <h1>🏥 환자 관리 시스템</h1>
-        <a th:href="@{/patients/dashboard}" class="btn btn-dashboard">📊 대시보드 보기</a>
+
+<!-- 상단 헤더 + 파티클 -->
+<header class="site-header">
+    <canvas id="particleCanvas"></canvas>
+    <div class="header-content">
+        <div class="header-logo">🏥</div>
+        <div class="header-text">
+            <h1>스마트 병원 관리 시스템</h1>
+            <p>Smart Hospital Management System</p>
+        </div>
+        <nav class="header-nav">
+            <a href="/patients" class="active">👥 환자 목록</a>
+            <a href="/patients/dashboard">📊 대시보드</a>
+            <a href="/appointments">📅 예약 관리</a>
+        </nav>
+        <div class="notif-wrap">
+            <button th:class="${notifCount > 0} ? 'notif-bell has-notif' : 'notif-bell'" onclick="toggleNotif(event)">
+                🔔
+                <span class="notif-badge" th:if="${notifCount > 0}" th:text="${notifCount}"></span>
+            </button>
+            <div class="notif-dropdown" id="notifDropdown">
+                <div class="notif-title">🔔 알림</div>
+                <div class="notif-item warn" th:if="${notifUnpaid > 0}">
+                    💳 수납 미완료 <strong th:text="${notifUnpaid}"></strong>명
+                </div>
+                <div class="notif-item info" th:if="${notifTodayAppts > 0}">
+                    📅 오늘 예약 <strong th:text="${notifTodayAppts}"></strong>건 대기
+                </div>
+                <div class="notif-empty" th:if="${notifCount == 0}">새 알림이 없습니다</div>
+                <a href="/appointments" class="notif-link">📋 예약 관리 바로가기</a>
+            </div>
+        </div>
+    </div>
+</header>
+
+<div class="page-body">
+
+    <!-- 환자 등록/수정 폼 -->
+    <div class="panel">
+        <div class="panel-header">
+            <div class="panel-icon">📋</div>
+            <h2 th:text="${patient.id == null} ? '신규 환자 등록' : '환자 정보 수정'">환자 등록</h2>
+        </div>
+        <div class="panel-body">
+            <form th:action="@{/patients}" th:object="${patient}" method="post">
+                <input type="hidden" th:field="*{id}" />
+                <div class="reg-form-grid">
+                    <div class="form-group">
+                        <label>환자 이름</label>
+                        <input type="text" th:field="*{name}" placeholder="성함 입력" required/>
+                    </div>
+                    <div class="form-group">
+                        <label>주요 병명</label>
+                        <input type="text" th:field="*{disease}" placeholder="주요 증상/병명"/>
+                    </div>
+                    <div class="form-group">
+                        <label>생년월일</label>
+                        <input type="date" th:field="*{birthDate}" required/>
+                    </div>
+                    <div class="form-group">
+                        <label>현재 상태</label>
+                        <select th:field="*{status}">
+                            <option th:each="s : ${T(com.example.hospital.entity.PatientStatus).values()}"
+                                    th:value="${s}"
+                                    th:text="${s.displayName}">상태</option>
+                        </select>
+                    </div>
+                    <div>
+                        <button type="submit" class="btn btn-primary"
+                                th:text="${patient.id == null} ? '✚ 등록' : '✔ 수정완료'">등록</button>
+                    </div>
+                    <div th:if="${patient.id != null}">
+                        <a th:href="@{/patients}" class="btn btn-secondary">✕ 취소</a>
+                    </div>
+                </div>
+            </form>
+        </div>
     </div>
 
-    <div class="input-form">
-        <h3 th:text="${patient.id == null} ? '➕ 환자 신규 등록' : '📝 환자 정보 수정'">환자 등록</h3>
-        <form th:action="@{/patients}" th:object="${patient}" method="post">
-            <input type="hidden" th:field="*{id}" />
-            <div>
-                <label>이름</label>
-                <input type="text" th:field="*{name}" placeholder="성함 입력" required/>
+    <!-- 목록 패널 -->
+    <div class="panel">
+        <div class="panel-header">
+            <div class="panel-icon">👥</div>
+            <h2>환자 목록</h2>
+            <div class="toolbar" style="margin: 0 0 0 auto;">
+                <form th:action="@{/patients}" method="get" style="display:flex; gap:8px; align-items:center;">
+                    <div class="search-input-wrap">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" name="keyword" th:value="${keyword}" placeholder="환자 이름 검색" />
+                    </div>
+                    <button type="submit" class="btn btn-primary btn-sm">검색</button>
+                    <a th:href="@{/patients}" class="btn btn-secondary btn-sm">초기화</a>
+                </form>
             </div>
-            <div>
-                <label>병명</label>
-                <input type="text" th:field="*{disease}" placeholder="주요 증상"/>
+        </div>
+
+        <table class="data-table">
+            <thead>
+            <tr>
+                <th style="width:60px">NO</th>
+                <th>환자명</th>
+                <th>병명</th>
+                <th style="width:60px">나이</th>
+                <th style="width:110px">상태</th>
+                <th style="width:105px">입원일</th>
+                <th style="width:105px">퇴원일</th>
+                <th style="width:90px">수납</th>
+                <th style="width:240px; text-align:center">관리</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="p : ${patients.content}">
+                <td class="id-cell" th:text="${p.id}">1</td>
+                <td>
+                    <a th:href="@{/patients/{id}(id=${p.id})}" th:text="${p.name}" class="patient-name-link">환자명</a>
+                </td>
+                <td th:text="${p.disease}">-</td>
+                <td th:text="${p.birthDate != null ? p.age + '세' : '-'}">-</td>
+                <td>
+                    <span th:if="${p.status != null}"
+                          th:text="${p.status.displayName}"
+                          th:class="${p.status.name() == 'WAITING'} ? 'badge badge-waiting' :
+                                    (${p.status.name() == 'IN_PROGRESS'} ? 'badge badge-inprogress' :
+                                    (${p.status.name() == 'COMPLETED'} ? 'badge badge-completed' :
+                                    (${p.status.name() == 'HOSPITALIZED'} ? 'badge badge-hosp' : 'badge badge-discharged')))">
+                    </span>
+                    <span th:if="${p.status == null}" class="badge badge-waiting">대기 중</span>
+                </td>
+                <td class="date-cell">
+                    <span th:text="${p.admissionDate != null ? p.admissionDate : '—'}" th:class="${p.admissionDate == null ? 'dash' : ''}"></span>
+                </td>
+                <td class="date-cell">
+                    <span th:text="${p.dischargeDate != null ? p.dischargeDate : '—'}" th:class="${p.dischargeDate == null ? 'dash' : ''}"></span>
+                </td>
+                <td>
+                    <span th:if="${p.paid}" class="pay-badge pay-done">✔ 완료</span>
+                    <span th:if="${!p.paid}" class="pay-badge pay-not">✕ 미납</span>
+                </td>
+                <td>
+                    <div class="action-group" style="justify-content:center;">
+                        <!-- 입원 버튼 -->
+                        <a th:if="${p.status != T(com.example.hospital.entity.PatientStatus).HOSPITALIZED and p.status != T(com.example.hospital.entity.PatientStatus).DISCHARGED}"
+                           th:href="@{/patients/hospitalize/{id}(id=${p.id})}" class="btn btn-info btn-sm">🏨 입원</a>
+                        <!-- 퇴원 버튼 -->
+                        <a th:if="${p.status == T(com.example.hospital.entity.PatientStatus).HOSPITALIZED}"
+                           th:href="@{/patients/discharge/{id}(id=${p.id})}" class="btn btn-ghost btn-sm">🚪 퇴원</a>
+                        <!-- 수납 버튼 -->
+                        <a th:if="${!p.paid}" th:href="@{/patients/pay/{id}(id=${p.id})}" class="btn btn-success btn-sm"
+                           onclick="showModal(this.href,'💳 수납 완료 처리','수납 완료로 변경하고 진료 완료 상태로 처리됩니다.','btn-success'); return false;">💳 수납</a>
+                        <!-- 수정 -->
+                        <a th:href="@{/patients/edit/{id}(id=${p.id})}" class="btn btn-warning btn-sm">✏️ 수정</a>
+                        <!-- 삭제 -->
+                        <a th:href="@{/patients/delete/{id}(id=${p.id})}" class="btn btn-danger btn-sm"
+                           onclick="showModal(this.href,'🗑 환자 삭제','이 환자의 모든 진료 기록도 함께 영구 삭제됩니다.','btn-danger'); return false;">🗑</a>
+                    </div>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+
+        <div style="padding: 16px 24px; border-top: 1px solid var(--gray-200);">
+            <div class="pagination" th:if="${patients.totalPages > 0}">
+                <a th:href="@{/patients(page=${patients.number - 1}, keyword=${keyword})}" th:if="${!patients.first}">‹</a>
+                <span th:each="i : ${#numbers.sequence(0, patients.totalPages - 1)}">
+                    <a th:href="@{/patients(page=${i}, keyword=${keyword})}" th:text="${i + 1}"
+                       th:class="${i == patients.number} ? 'active' : ''"></a>
+                </span>
+                <a th:href="@{/patients(page=${patients.number + 1}, keyword=${keyword})}" th:if="${!patients.last}">›</a>
             </div>
-            <div>
-                <label>나이</label>
-                <input type="number" th:field="*{age}" placeholder="세"/>
-            </div>
-            <div>
-                <label>현재 상태</label>
-                <select th:field="*{status}">
-                    <option th:each="s : ${T(com.example.hospital.entity.PatientStatus).values()}"
-                            th:value="${s}"
-                            th:text="${s.displayName}">상태</option>
-                </select>
-            </div>
-            <div style="margin-top: 25px;">
-                <button type="submit" class="btn btn-save" th:text="${patient.id == null} ? '등록하기' : '수정완료'">저장</button>
-                <a th:if="${patient.id != null}" th:href="@{/patients}" class="btn btn-edit" style="background-color: #6c757d; color: white;">취소</a>
-            </div>
-        </form>
+        </div>
     </div>
 
-    <form th:action="@{/patients}" method="get" class="search-form">
-        <input type="text" name="keyword" th:value="${keyword}" placeholder="검색할 환자 이름을 입력하세요" />
-        <button type="submit" class="btn btn-save">검색</button>
-    </form>
+</div>
 
-    <table>
-        <thead>
-        <tr>
-            <th>ID</th>
-            <th>이름</th>
-            <th>병명</th>
-            <th>나이</th>
-            <th>상태</th>
-            <th>입원일</th>
-            <th>퇴원일</th>
-            <th>총 진료비</th>
-            <th>수납상태</th>
-            <th>관리메뉴</th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr th:each="p : ${patients.content}">
-            <td th:text="${p.id}">1</td>
-            <td>
-                <a th:href="@{/patients/{id}(id=${p.id})}" th:text="${p.name}" style="color: #007bff; font-weight: bold; text-decoration: none;">환자명</a>
-            </td>
-            <td th:text="${p.disease}">-</td>
-            <td th:text="${p.age}">-</td>
-            <td>
-                <span th:if="${p.status != null}" th:text="${p.status.displayName}"
-                      th:class="${p.status == T(com.example.hospital.entity.PatientStatus).HOSPITALIZED ? 'status-hosp' : (p.status == T(com.example.hospital.entity.PatientStatus).DISCHARGED ? 'status-dis' : '')}"></span>
-                <span th:if="${p.status == null}">대기중</span>
-            </td>
-            <td th:text="${p.admissionDate != null ? p.admissionDate : '-'}"></td>
-            <td th:text="${p.dischargeDate != null ? p.dischargeDate : '-'}"></td>
-            <td th:text="${#numbers.formatInteger(#aggregates.sum(p.charts.![fee]) ?: 0, 0, 'COMMA')} + '원'">0원</td>
-            <td>
-                <span th:text="${p.paid} ? '결제완료' : '미납'" th:class="${p.paid ? 'pay-done' : 'pay-not'}"></span>
-            </td>
-            <td>
-                <a th:if="${p.status != T(com.example.hospital.entity.PatientStatus).HOSPITALIZED and p.status != T(com.example.hospital.entity.PatientStatus).DISCHARGED}"
-                   th:href="@{/patients/hospitalize/{id}(id=${p.id})}" class="btn btn-action">입원</a>
+<!-- UI 애니메이션 -->
+<script>
+(function() {
+    // ── Ripple 효과
+    document.querySelectorAll('.btn').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            var rect = this.getBoundingClientRect();
+            var el = document.createElement('span');
+            el.className = 'ripple-el';
+            el.style.left = (e.clientX - rect.left) + 'px';
+            el.style.top  = (e.clientY - rect.top)  + 'px';
+            this.appendChild(el);
+            setTimeout(function() { el.remove(); }, 650);
+        });
+    });
 
-                <a th:if="${p.status == T(com.example.hospital.entity.PatientStatus).HOSPITALIZED}"
-                   th:href="@{/patients/discharge/{id}(id=${p.id})}" class="btn btn-action" style="background-color: #6c757d;">퇴원</a>
+    // ── 패널 Glow 추적
+    document.querySelectorAll('.panel').forEach(function(card) {
+        card.addEventListener('mousemove', function(e) {
+            var r = this.getBoundingClientRect();
+            this.style.setProperty('--glow-x', (e.clientX - r.left) + 'px');
+            this.style.setProperty('--glow-y', (e.clientY - r.top)  + 'px');
+        });
+    });
 
-                <a th:if="${!p.paid}" th:href="@{/patients/pay/{id}(id=${p.id})}" class="btn btn-pay" onclick="return confirm('수납 완료 처리하시겠습니까?')">수납</a>
+    // ── 테이블 행 슬라이드인
+    document.querySelectorAll('.data-table tbody tr').forEach(function(tr, i) {
+        tr.style.animation = 'slideInRow 0.35s ease ' + (i * 0.07) + 's forwards';
+    });
+})();
 
-                <a th:href="@{/patients/edit/{id}(id=${p.id})}" class="btn btn-edit">수정</a>
-                <a th:href="@{/patients/delete/{id}(id=${p.id})}" class="btn btn-delete" onclick="return confirm('데이터가 영구 삭제됩니다. 계속하시겠습니까?')">삭제</a>
-            </td>
-        </tr>
-        </tbody>
-    </table>
+// ── 토스트
+function showToast(msg, type) {
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.className = 'toast-' + (type || 'success') + ' show';
+    clearTimeout(t._timer);
+    t._timer = setTimeout(function() { t.classList.remove('show'); }, 3500);
+}
+(function() {
+    var td = document.getElementById('toast-data');
+    if (td) setTimeout(function() { showToast(td.dataset.msg, td.dataset.type); }, 400);
+})();
 
-    <div class="pagination" th:if="${patients.totalPages > 0}">
-        <a th:href="@{/patients(page=${patients.number - 1}, keyword=${keyword})}" th:if="${!patients.first}">이전</a>
-        <span th:each="i : ${#numbers.sequence(0, patients.totalPages - 1)}">
-            <a th:href="@{/patients(page=${i}, keyword=${keyword})}" th:text="${i + 1}" th:class="${i == patients.number} ? 'active' : ''"></a>
-        </span>
-        <a th:href="@{/patients(page=${patients.number + 1}, keyword=${keyword})}" th:if="${!patients.last}">다음</a>
+// ── 커스텀 모달
+function showModal(url, title, desc, btnClass) {
+    document.getElementById('modalTitle').textContent = title;
+    document.getElementById('modalDesc').textContent = desc;
+    document.getElementById('modalConfirmBtn').href = url;
+    document.getElementById('modalConfirmBtn').className = 'btn ' + (btnClass || 'btn-danger');
+    document.getElementById('confirmModal').classList.add('open');
+}
+function closeModal() { document.getElementById('confirmModal').classList.remove('open'); }
+
+// ── 스크롤 페이드인
+(function() {
+    var obs = new IntersectionObserver(function(entries) {
+        entries.forEach(function(e) {
+            if (e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target); }
+        });
+    }, { threshold: 0.07 });
+    document.querySelectorAll('.panel').forEach(function(el, i) {
+        el.classList.add('fade-up');
+        el.style.transitionDelay = (i * 0.1) + 's';
+        obs.observe(el);
+    });
+})();
+
+function toggleNotif(e) {
+    e.stopPropagation();
+    var dropdown = document.getElementById('notifDropdown');
+    var bell = e.currentTarget;
+    var rect = bell.getBoundingClientRect();
+    dropdown.style.top   = (rect.bottom + 8) + 'px';
+    dropdown.style.right = (window.innerWidth - rect.right) + 'px';
+    dropdown.classList.toggle('open');
+}
+document.addEventListener('click', function() {
+    var d = document.getElementById('notifDropdown');
+    if (d) d.classList.remove('open');
+});
+</script>
+
+<!-- 토스트 -->
+<div id="toast"></div>
+<div id="toast-data" th:if="${toast}" th:attr="data-msg=${toast},data-type=${toastType}" style="display:none"></div>
+
+<!-- 확인 모달 -->
+<div class="modal-overlay" id="confirmModal" onclick="if(event.target===this)closeModal()">
+    <div class="modal-box">
+        <div class="modal-icon">⚠️</div>
+        <div class="modal-title" id="modalTitle">확인</div>
+        <div class="modal-desc" id="modalDesc">계속하시겠습니까?</div>
+        <div class="modal-actions">
+            <a id="modalConfirmBtn" href="#" class="btn btn-danger">확인</a>
+            <button onclick="closeModal()" class="btn btn-secondary">취소</button>
+        </div>
     </div>
 </div>
+
+<!-- 파티클 애니메이션 -->
+<script>
+    (function() {
+        const canvas = document.getElementById('particleCanvas');
+        const ctx = canvas.getContext('2d');
+        let W, H, particles = [], lines = [];
+
+        function resize() {
+            W = canvas.width = canvas.offsetWidth;
+            H = canvas.height = canvas.offsetHeight;
+        }
+
+        function Particle() {
+            this.x = Math.random() * W;
+            this.y = Math.random() * H;
+            this.vx = (Math.random() - 0.5) * 0.7;
+            this.vy = (Math.random() - 0.5) * 0.7;
+            this.r = Math.random() * 2 + 1;
+            this.alpha = Math.random() * 0.5 + 0.2;
+        }
+
+        Particle.prototype.update = function() {
+            this.x += this.vx; this.y += this.vy;
+            if (this.x < 0) this.x = W;
+            if (this.x > W) this.x = 0;
+            if (this.y < 0) this.y = H;
+            if (this.y > H) this.y = 0;
+        };
+
+        function init() {
+            particles = [];
+            for (let i = 0; i < 80; i++) particles.push(new Particle());
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, W, H);
+
+            // 웨이브 라인
+            ctx.save();
+            const t = Date.now() / 1000;
+            for (let w = 0; w < 3; w++) {
+                ctx.beginPath();
+                ctx.strokeStyle = `rgba(255,255,255,${0.07 + w * 0.04})`;
+                ctx.lineWidth = 1.5 - w * 0.3;
+                for (let x = 0; x <= W; x += 4) {
+                    const y = H * 0.5 + Math.sin((x / W) * Math.PI * 3 + t * (0.6 + w * 0.3)) * (18 + w * 12) + w * 20;
+                    x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+            }
+            ctx.restore();
+
+            // 파티클 & 연결선
+            for (let i = 0; i < particles.length; i++) {
+                const p = particles[i];
+                p.update();
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                ctx.fillStyle = `rgba(255,255,255,${p.alpha})`;
+                ctx.fill();
+
+                for (let j = i + 1; j < particles.length; j++) {
+                    const q = particles[j];
+                    const dx = p.x - q.x, dy = p.y - q.y;
+                    const dist = Math.sqrt(dx * dx + dy * dy);
+                    if (dist < 80) {
+                        ctx.beginPath();
+                        ctx.strokeStyle = `rgba(255,255,255,${0.12 * (1 - dist / 80)})`;
+                        ctx.lineWidth = 0.6;
+                        ctx.moveTo(p.x, p.y);
+                        ctx.lineTo(q.x, q.y);
+                        ctx.stroke();
+                    }
+                }
+            }
+            requestAnimationFrame(draw);
+        }
+
+        window.addEventListener('resize', function() { resize(); init(); });
+        resize(); init(); draw();
+    })();
+</script>
 </body>
 </html>

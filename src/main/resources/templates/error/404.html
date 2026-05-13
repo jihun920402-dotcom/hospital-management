@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>페이지를 찾을 수 없습니다 | 병원 관리 시스템</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #1a6fc4;
+            --accent: #00b8a9;
+            --gray-600: #6c757d;
+            --text: #2d3748;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            background:
+                radial-gradient(ellipse 80% 70% at 0% 0%,   #c7dcf8 0%, transparent 55%),
+                radial-gradient(ellipse 60% 55% at 100% 0%, #b8f0ea 0%, transparent 55%),
+                radial-gradient(ellipse 70% 60% at 60% 100%,#cde4f9 0%, transparent 55%),
+                radial-gradient(ellipse 50% 45% at 30% 60%, #daeeff 0%, transparent 50%),
+                #e8f1fc;
+            background-attachment: fixed;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* ── 헤더 ── */
+        .site-header {
+            position: relative; height: 130px;
+            background: linear-gradient(135deg, #0d2d5e 0%, #1a6fc4 50%, #00b8a9 100%);
+            overflow: hidden; display: flex; align-items: center;
+            padding: 0 40px; z-index: 10;
+        }
+        .site-header canvas { position: absolute; inset: 0; z-index: 0; }
+        .header-content { position: relative; z-index: 2; display: flex; align-items: center; gap: 20px; width: 100%; }
+        .header-logo {
+            width: 56px; height: 56px; background: rgba(255,255,255,0.15);
+            border-radius: 16px; display: flex; align-items: center; justify-content: center;
+            font-size: 28px; border: 1.5px solid rgba(255,255,255,0.3); backdrop-filter: blur(4px);
+        }
+        .header-text h1 { color: #fff; font-size: 1.55em; font-weight: 700; letter-spacing: -0.5px; }
+        .header-text p  { color: rgba(255,255,255,0.72); font-size: 0.82em; margin-top: 2px; }
+        .header-nav { margin-left: auto; display: flex; gap: 10px; }
+        .header-nav a {
+            padding: 8px 20px; border-radius: 30px; font-size: 0.85em; font-weight: 500;
+            text-decoration: none; transition: 0.2s;
+            border: 1.5px solid rgba(255,255,255,0.35); color: #fff;
+            backdrop-filter: blur(4px); background: rgba(255,255,255,0.10);
+        }
+        .header-nav a:hover { background: rgba(255,255,255,0.22); }
+
+        /* ── 404 본문 ── */
+        .error-body {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 24px;
+        }
+        .error-card {
+            background: rgba(255,255,255,0.72);
+            backdrop-filter: blur(18px);
+            -webkit-backdrop-filter: blur(18px);
+            border: 1px solid rgba(255,255,255,0.6);
+            border-radius: 20px;
+            box-shadow: 0 8px 40px rgba(0,0,0,0.12);
+            padding: 60px 56px;
+            text-align: center;
+            max-width: 520px;
+            width: 100%;
+            animation: cardIn 0.5s cubic-bezier(0.34,1.56,0.64,1);
+        }
+        @keyframes cardIn {
+            from { opacity: 0; transform: translateY(32px) scale(0.96); }
+            to   { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .error-code {
+            font-size: 7em;
+            font-weight: 700;
+            line-height: 1;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 8px;
+            animation: floatNum 3s ease-in-out infinite;
+        }
+        @keyframes floatNum {
+            0%, 100% { transform: translateY(0); }
+            50%       { transform: translateY(-8px); }
+        }
+
+        .error-icon { font-size: 3em; margin-bottom: 16px; }
+
+        .error-title {
+            font-size: 1.4em; font-weight: 700;
+            color: var(--text); margin-bottom: 12px;
+        }
+        .error-desc {
+            font-size: 0.92em; color: var(--gray-600);
+            line-height: 1.7; margin-bottom: 36px;
+        }
+
+        .error-actions { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+
+        .btn {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 12px 28px; border-radius: 30px;
+            font-size: 0.9em; font-weight: 600; font-family: inherit;
+            text-decoration: none; cursor: pointer; border: none;
+            transition: all 0.15s;
+            box-shadow: 0 5px 0 rgba(0,0,0,0.14), 0 7px 14px rgba(0,0,0,0.1);
+            position: relative; overflow: hidden;
+        }
+        .btn:active { transform: translateY(4px) !important; box-shadow: 0 1px 0 rgba(0,0,0,0.14) !important; }
+        .btn-primary { background: var(--primary); color: #fff; }
+        .btn-primary:hover { background: #155a9e; transform: translateY(-2px); }
+        .btn-ghost { background: transparent; color: var(--gray-600); border: 1.5px solid #ced4da; }
+        .btn-ghost:hover { background: #f1f3f5; }
+
+        /* ── Ripple ── */
+        @keyframes ripple-expand { to { width: 320px; height: 320px; opacity: 0; } }
+        .ripple-el {
+            position: absolute; border-radius: 50%;
+            background: rgba(255,255,255,0.38);
+            width: 0; height: 0;
+            transform: translate(-50%, -50%);
+            animation: ripple-expand 0.6s linear;
+            pointer-events: none;
+        }
+
+        /* ── 반응형 ── */
+        @media (max-width: 768px) {
+            .site-header { height: auto; padding: 14px 16px; }
+            .header-content { flex-wrap: wrap; gap: 10px; }
+            .header-nav {
+                order: 3; width: 100%; margin-left: 0; margin-top: 4px;
+                justify-content: center; flex-wrap: wrap; gap: 6px;
+            }
+            .header-nav a { padding: 6px 14px; font-size: 0.8em; }
+            .notif-wrap { margin-left: auto; }
+
+            .error-card { padding: 40px 28px; }
+            .error-code { font-size: 5em; }
+            .error-actions { flex-direction: column; align-items: center; }
+            .btn { width: 100%; max-width: 280px; justify-content: center; }
+        }
+        @media (max-width: 480px) {
+            .header-text { display: none; }
+            .header-logo { width: 44px; height: 44px; font-size: 22px; }
+            .error-card { padding: 32px 18px; }
+            .error-code { font-size: 4em; }
+            .error-title { font-size: 1.1em; }
+        }
+    </style>
+</head>
+<body>
+
+<header class="site-header">
+    <canvas id="particleCanvas"></canvas>
+    <div class="header-content">
+        <div class="header-logo">🏥</div>
+        <div class="header-text">
+            <h1>스마트 병원 관리 시스템</h1>
+            <p>Smart Hospital Management System</p>
+        </div>
+        <nav class="header-nav">
+            <a href="/patients">👥 환자 목록</a>
+            <a href="/patients/dashboard">📊 대시보드</a>
+            <a href="/appointments">📅 예약 관리</a>
+        </nav>
+    </div>
+</header>
+
+<div class="error-body">
+    <div class="error-card">
+        <div class="error-code">404</div>
+        <div class="error-icon">🔍</div>
+        <div class="error-title">페이지를 찾을 수 없습니다</div>
+        <div class="error-desc">
+            요청하신 페이지가 존재하지 않거나 이동되었습니다.<br>
+            주소를 다시 확인하거나 아래 버튼으로 돌아가 주세요.
+        </div>
+        <div class="error-actions">
+            <a href="/patients" class="btn btn-primary">🏠 홈으로 돌아가기</a>
+            <a href="javascript:history.back()" class="btn btn-ghost">← 이전 페이지</a>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    // Ripple
+    document.querySelectorAll('.btn').forEach(function(btn) {
+        btn.addEventListener('click', function(e) {
+            var rect = this.getBoundingClientRect();
+            var el = document.createElement('span');
+            el.className = 'ripple-el';
+            el.style.left = (e.clientX - rect.left) + 'px';
+            el.style.top  = (e.clientY - rect.top)  + 'px';
+            this.appendChild(el);
+            setTimeout(function() { el.remove(); }, 650);
+        });
+    });
+})();
+</script>
+
+<script>
+(function() {
+    const canvas = document.getElementById('particleCanvas');
+    const ctx = canvas.getContext('2d');
+    let W, H, particles = [];
+
+    function resize() { W = canvas.width = canvas.offsetWidth; H = canvas.height = canvas.offsetHeight; }
+
+    function Particle() {
+        this.x = Math.random() * W; this.y = Math.random() * H;
+        this.vx = (Math.random() - 0.5) * 0.7; this.vy = (Math.random() - 0.5) * 0.7;
+        this.r = Math.random() * 2 + 1; this.alpha = Math.random() * 0.5 + 0.2;
+    }
+    Particle.prototype.update = function() {
+        this.x += this.vx; this.y += this.vy;
+        if (this.x < 0) this.x = W; if (this.x > W) this.x = 0;
+        if (this.y < 0) this.y = H; if (this.y > H) this.y = 0;
+    };
+
+    function init() { particles = []; for (let i = 0; i < 80; i++) particles.push(new Particle()); }
+
+    function draw() {
+        ctx.clearRect(0, 0, W, H);
+        const t = Date.now() / 1000;
+        for (let w = 0; w < 3; w++) {
+            ctx.beginPath();
+            ctx.strokeStyle = `rgba(255,255,255,${0.07 + w * 0.04})`;
+            ctx.lineWidth = 1.5 - w * 0.3;
+            for (let x = 0; x <= W; x += 4) {
+                const y = H * 0.5 + Math.sin((x / W) * Math.PI * 3 + t * (0.6 + w * 0.3)) * (18 + w * 12) + w * 20;
+                x === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+        }
+        for (let i = 0; i < particles.length; i++) {
+            const p = particles[i]; p.update();
+            ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(255,255,255,${p.alpha})`; ctx.fill();
+            for (let j = i + 1; j < particles.length; j++) {
+                const q = particles[j];
+                const dx = p.x - q.x, dy = p.y - q.y, dist = Math.sqrt(dx*dx + dy*dy);
+                if (dist < 80) {
+                    ctx.beginPath();
+                    ctx.strokeStyle = `rgba(255,255,255,${0.12 * (1 - dist/80)})`;
+                    ctx.lineWidth = 0.6; ctx.moveTo(p.x, p.y); ctx.lineTo(q.x, q.y); ctx.stroke();
+                }
+            }
+        }
+        requestAnimationFrame(draw);
+    }
+
+    window.addEventListener('resize', function() { resize(); init(); });
+    resize(); init(); draw();
+})();
+</script>
+</body>
+</html>

@@ -14,6 +14,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.time.LocalDate;
 
@@ -24,7 +25,6 @@ public class PatientController {
     @Autowired
     private PatientRepository patientRepository;
 
-    // ⭐ ChartRepository 추가
     @Autowired
     private ChartRepository chartRepository;
 
@@ -44,13 +44,12 @@ public class PatientController {
         return "patientList";
     }
 
-    // ⭐ 환자 상세 조회 및 진료 기록 조회 추가
     @GetMapping("/{id}")
     public String getPatientDetail(@PathVariable Long id, Model model) {
         Patient patient = patientRepository.findById(id).orElse(null);
         model.addAttribute("patient", patient);
         model.addAttribute("charts", chartRepository.findByPatientId(id));
-        return "patientDetail"; // 새로운 뷰
+        return "patientDetail";
     }
 
     @PostMapping
@@ -58,13 +57,17 @@ public class PatientController {
             @Valid @ModelAttribute("patient") Patient patient,
             BindingResult bindingResult,
             Model model,
-            @PageableDefault(size = 5) Pageable pageable) {
+            @PageableDefault(size = 5) Pageable pageable,
+            RedirectAttributes ra) {
 
         if (bindingResult.hasErrors()) {
             model.addAttribute("patients", patientRepository.findAll(pageable));
             return "patientList";
         }
+        boolean isNew = (patient.getId() == null);
         patientRepository.save(patient);
+        ra.addFlashAttribute("toast", isNew ? "✔ 환자가 등록되었습니다." : "✔ 환자 정보가 수정되었습니다.");
+        ra.addFlashAttribute("toastType", "success");
         return "redirect:/patients";
     }
 
@@ -76,74 +79,85 @@ public class PatientController {
     }
 
     @GetMapping("/delete/{id}")
-    public String deletePatient(@PathVariable Long id) {
+    public String deletePatient(@PathVariable Long id, RedirectAttributes ra) {
         patientRepository.deleteById(id);
+        ra.addFlashAttribute("toast", "🗑 환자가 삭제되었습니다.");
+        ra.addFlashAttribute("toastType", "danger");
         return "redirect:/patients";
     }
 
-    // ⭐ 진료 기록 저장 메서드 추가
     @PostMapping("/{patientId}/charts")
-    public String addChart(@PathVariable Long patientId, @ModelAttribute Chart chart) {
+    public String addChart(@PathVariable Long patientId, @ModelAttribute Chart chart, RedirectAttributes ra) {
         Patient patient = patientRepository.findById(patientId).orElse(null);
         if (patient != null) {
-            chart.setPatient(patient); // 진료 기록에 환자 연결
+            chart.setPatient(patient);
             chartRepository.save(chart);
         }
-        return "redirect:/patients/" + patientId; // 상세 페이지로 리다이렉트
+        ra.addFlashAttribute("toast", "✔ 진료 기록이 추가되었습니다.");
+        ra.addFlashAttribute("toastType", "success");
+        return "redirect:/patients/" + patientId;
     }
 
-    // ⭐ 환자 상태 변경 메서드 추가
     @GetMapping("/update-status/{id}")
-    public String updateStatus(@PathVariable Long id, @RequestParam PatientStatus status) {
+    public String updateStatus(@PathVariable Long id, @RequestParam PatientStatus status, RedirectAttributes ra) {
         Patient patient = patientRepository.findById(id).orElse(null);
         if (patient != null) {
             patient.setStatus(status);
             patientRepository.save(patient);
         }
-        return "redirect:/patients"; // 목록 화면으로 이동
-    }
-
-    // ⭐ 수납 완료 처리 메서드 추가
-    @GetMapping("/pay/{id}")
-    public String payPatient(@PathVariable Long id) {
-        Patient patient = patientRepository.findById(id).orElse(null);
-        if (patient != null) {
-            patient.setPaid(true); // 결제 완료로 변경
-            patient.setStatus(PatientStatus.COMPLETED); // 상태도 완료로 변경
-            patientRepository.save(patient);
-        }
+        ra.addFlashAttribute("toast", "✔ 상태가 변경되었습니다.");
+        ra.addFlashAttribute("toastType", "success");
         return "redirect:/patients";
     }
 
-    // ⭐ 입원 처리 메서드
+    @GetMapping("/pay/{id}")
+    public String payPatient(@PathVariable Long id, RedirectAttributes ra) {
+        Patient patient = patientRepository.findById(id).orElse(null);
+        if (patient != null) {
+            patient.setPaid(true);
+            patient.setStatus(PatientStatus.COMPLETED);
+            patientRepository.save(patient);
+        }
+        ra.addFlashAttribute("toast", "💳 수납이 완료되었습니다.");
+        ra.addFlashAttribute("toastType", "success");
+        return "redirect:/patients";
+    }
+
     @GetMapping("/hospitalize/{id}")
-    public String hospitalizePatient(@PathVariable Long id) {
+    public String hospitalizePatient(@PathVariable Long id, RedirectAttributes ra) {
         Patient patient = patientRepository.findById(id).orElse(null);
         if (patient != null) {
             patient.setStatus(PatientStatus.HOSPITALIZED);
-            patient.setAdmissionDate(LocalDate.now()); // 오늘 날짜로 입원일 설정
+            patient.setAdmissionDate(LocalDate.now());
             patientRepository.save(patient);
         }
+        ra.addFlashAttribute("toast", "🏨 입원 처리되었습니다.");
+        ra.addFlashAttribute("toastType", "info");
         return "redirect:/patients";
     }
 
-    // ⭐ 퇴원 처리 메서드
     @GetMapping("/discharge/{id}")
-    public String dischargePatient(@PathVariable Long id) {
+    public String dischargePatient(@PathVariable Long id, RedirectAttributes ra) {
         Patient patient = patientRepository.findById(id).orElse(null);
         if (patient != null) {
             patient.setStatus(PatientStatus.DISCHARGED);
-            patient.setDischargeDate(LocalDate.now()); // 오늘 날짜로 퇴원일 설정
+            patient.setDischargeDate(LocalDate.now());
             patientRepository.save(patient);
         }
+        ra.addFlashAttribute("toast", "🚪 퇴원 처리되었습니다.");
+        ra.addFlashAttribute("toastType", "warning");
         return "redirect:/patients";
     }
 
     @GetMapping("/dashboard")
     public String getDashboard(Model model) {
         model.addAttribute("totalPatients", patientRepository.count());
+        model.addAttribute("todayVisitors", chartRepository.countDistinctPatientByChartDate(LocalDate.now()));
         model.addAttribute("hospitalizedCount", patientRepository.countByStatus(PatientStatus.HOSPITALIZED));
-        model.addAttribute("unpaidCount", patientRepository.countByIsPaidFalse());
-        return "dashboard"; // templates/dashboard.html
+        model.addAttribute("dischargedCount", patientRepository.countByStatus(PatientStatus.DISCHARGED));
+        model.addAttribute("waitingCount", patientRepository.countByStatus(PatientStatus.WAITING));
+        model.addAttribute("inProgressCount", patientRepository.countByStatus(PatientStatus.IN_PROGRESS));
+        model.addAttribute("completedCount", patientRepository.countByStatus(PatientStatus.COMPLETED));
+        return "dashboard";
     }
 }
