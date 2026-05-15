@@ -381,6 +381,39 @@
         .hsi-label { display: block; font-size: 0.74em; color: var(--gray-600); font-weight: 600; margin-top: 5px; letter-spacing: 0.3px; }
         .hero-divider { width: 1px; height: 44px; background: var(--gray-200); }
 
+        /* ── 공지 배너 ── */
+        .info-banner {
+            background: linear-gradient(90deg, #0a2447 0%, #0d3567 50%, #0a3060 100%);
+            padding: 9px 40px; display: flex; align-items: center;
+            gap: 16px; flex-wrap: wrap; position: relative; z-index: 9;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            animation: bannerSlide 0.5s cubic-bezier(0.34,1.2,0.64,1);
+        }
+        @keyframes bannerSlide {
+            from { transform: translateY(-100%); opacity: 0; }
+            to   { transform: translateY(0); opacity: 1; }
+        }
+        .banner-item {
+            display: inline-flex; align-items: center; gap: 8px;
+            font-size: 0.82em; font-weight: 600; color: rgba(255,255,255,0.88);
+            padding: 4px 14px; border-radius: 20px;
+        }
+        .banner-warn { background: rgba(231,76,60,0.22); border: 1px solid rgba(231,76,60,0.4); }
+        .banner-info { background: rgba(0,184,169,0.22); border: 1px solid rgba(0,184,169,0.4); }
+        .banner-item a {
+            color: #fff; font-weight: 700; text-decoration: none;
+            background: rgba(255,255,255,0.15); padding: 2px 9px;
+            border-radius: 10px; font-size: 0.9em; transition: background 0.15s;
+        }
+        .banner-item a:hover { background: rgba(255,255,255,0.28); }
+        .banner-close {
+            margin-left: auto; background: none; border: none;
+            color: rgba(255,255,255,0.45); font-size: 0.95em; cursor: pointer;
+            padding: 3px 8px; border-radius: 6px; transition: 0.15s;
+            font-weight: 700; font-family: inherit;
+        }
+        .banner-close:hover { color: #fff; background: rgba(255,255,255,0.12); }
+
         /* ── 토스트 알림 ── */
         #toast {
             position: fixed; bottom: 30px; right: 30px;
@@ -502,6 +535,19 @@
         </div>
     </div>
 </header>
+
+<!-- 공지 배너 -->
+<div class="info-banner" id="infoBanner" th:if="${notifUnpaid > 0 or notifTodayAppts > 0}">
+    <span th:if="${notifUnpaid > 0}" class="banner-item banner-warn">
+        💳 수납 미완료 <strong th:text="${notifUnpaid}"></strong>명
+        <a href="/patients">바로가기 →</a>
+    </span>
+    <span th:if="${notifTodayAppts > 0}" class="banner-item banner-info">
+        📅 오늘 예약 <strong th:text="${notifTodayAppts}"></strong>건 대기 중
+        <a href="/appointments">바로가기 →</a>
+    </span>
+    <button class="banner-close" onclick="dismissBanner()">✕</button>
+</div>
 
 <div class="page-body">
 
@@ -788,18 +834,18 @@
     });
 })();
 
-// ── 토스트
-function showToast(msg, type) {
-    var t = document.getElementById('toast');
-    t.textContent = msg;
-    t.className = 'toast-' + (type || 'success') + ' show';
-    clearTimeout(t._timer);
-    t._timer = setTimeout(function() { t.classList.remove('show'); }, 3500);
-}
+// ── 공지 배너
 (function() {
-    var td = document.getElementById('toast-data');
-    if (td) setTimeout(function() { showToast(td.dataset.msg, td.dataset.type); }, 400);
+    var b = document.getElementById('infoBanner');
+    if (b && sessionStorage.getItem('bannerDismissed_dash')) b.style.display = 'none';
 })();
+function dismissBanner() {
+    sessionStorage.setItem('bannerDismissed_dash', '1');
+    var b = document.getElementById('infoBanner');
+    b.style.transition = 'opacity 0.3s, transform 0.3s';
+    b.style.opacity = '0'; b.style.transform = 'translateY(-10px)';
+    setTimeout(function() { b.style.display = 'none'; }, 300);
+}
 
 // ── 스크롤 페이드인
 (function() {

@@ -99,20 +99,69 @@
         /* ── 토스트 알림 ── */
         #toast {
             position: fixed; bottom: 30px; right: 30px;
-            padding: 14px 22px; border-radius: 12px;
-            font-size: 0.9em; font-weight: 600; color: #fff;
-            box-shadow: 0 8px 30px rgba(0,0,0,0.25);
-            z-index: 99999;
-            display: flex; align-items: center; gap: 10px;
-            transform: translateY(80px); opacity: 0;
-            transition: transform 0.4s cubic-bezier(0.34,1.56,0.64,1), opacity 0.3s;
-            pointer-events: none; min-width: 220px;
+            border-radius: 14px; font-size: 0.9em; font-weight: 600; color: #fff;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.28);
+            z-index: 99999; overflow: hidden;
+            transform: translateX(120%); opacity: 0;
+            transition: transform 0.45s cubic-bezier(0.34,1.56,0.64,1), opacity 0.3s;
+            pointer-events: auto; min-width: 260px; max-width: 360px;
         }
-        #toast.show { transform: translateY(0); opacity: 1; }
+        #toast.show { transform: translateX(0); opacity: 1; }
         #toast.toast-success { background: linear-gradient(135deg, #27ae60, #2ecc71); }
         #toast.toast-warning { background: linear-gradient(135deg, #f39c12, #e67e22); }
         #toast.toast-danger  { background: linear-gradient(135deg, #e74c3c, #c0392b); }
         #toast.toast-info    { background: linear-gradient(135deg, #1a6fc4, #00b8a9); }
+        .toast-body { display: flex; align-items: center; gap: 10px; padding: 14px 16px 14px 18px; }
+        .toast-icon { font-size: 1.3em; flex-shrink: 0; }
+        .toast-msg  { flex: 1; line-height: 1.4; }
+        .toast-close {
+            background: none; border: none; color: rgba(255,255,255,0.7);
+            font-size: 1.05em; cursor: pointer; padding: 0 4px; flex-shrink: 0;
+            line-height: 1; font-family: inherit;
+        }
+        .toast-close:hover { color: #fff; }
+        .toast-progress {
+            height: 3px; background: rgba(255,255,255,0.35);
+            transform-origin: left;
+        }
+        .toast-progress.run { animation: toast-shrink 3.5s linear forwards; }
+        @keyframes toast-shrink {
+            from { transform: scaleX(1); }
+            to   { transform: scaleX(0); }
+        }
+
+        /* ── 공지 배너 ── */
+        .info-banner {
+            background: linear-gradient(90deg, #0a2447 0%, #0d3567 50%, #0a3060 100%);
+            padding: 9px 40px; display: flex; align-items: center;
+            gap: 16px; flex-wrap: wrap; position: relative; z-index: 9;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            animation: bannerSlide 0.5s cubic-bezier(0.34,1.2,0.64,1);
+        }
+        @keyframes bannerSlide {
+            from { transform: translateY(-100%); opacity: 0; }
+            to   { transform: translateY(0); opacity: 1; }
+        }
+        .banner-item {
+            display: inline-flex; align-items: center; gap: 8px;
+            font-size: 0.82em; font-weight: 600; color: rgba(255,255,255,0.88);
+            padding: 4px 14px; border-radius: 20px;
+        }
+        .banner-warn { background: rgba(231,76,60,0.22); border: 1px solid rgba(231,76,60,0.4); }
+        .banner-info { background: rgba(0,184,169,0.22); border: 1px solid rgba(0,184,169,0.4); }
+        .banner-item a {
+            color: #fff; font-weight: 700; text-decoration: none;
+            background: rgba(255,255,255,0.15); padding: 2px 9px;
+            border-radius: 10px; font-size: 0.9em; transition: background 0.15s;
+        }
+        .banner-item a:hover { background: rgba(255,255,255,0.28); }
+        .banner-close {
+            margin-left: auto; background: none; border: none;
+            color: rgba(255,255,255,0.45); font-size: 0.95em; cursor: pointer;
+            padding: 3px 8px; border-radius: 6px; transition: 0.15s;
+            font-weight: 700; font-family: inherit;
+        }
+        .banner-close:hover { color: #fff; background: rgba(255,255,255,0.12); }
 
         /* ── 커스텀 확인 모달 ── */
         .modal-overlay {
@@ -122,7 +171,7 @@
         }
         .modal-overlay.open { display: flex; }
         .modal-box {
-            background: #fff; border-radius: 20px;
+            background: #fff; border-radius: 24px;
             padding: 36px 32px; max-width: 400px; width: 90%;
             box-shadow: 0 24px 60px rgba(0,0,0,0.25); text-align: center;
             animation: modalPop 0.35s cubic-bezier(0.34,1.56,0.64,1);
@@ -131,7 +180,16 @@
             from { transform: scale(0.75); opacity: 0; }
             to   { transform: scale(1);    opacity: 1; }
         }
-        .modal-icon { font-size: 3.2em; margin-bottom: 14px; line-height: 1; }
+        .modal-icon-wrap {
+            width: 80px; height: 80px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 2.3em; margin: 0 auto 20px;
+        }
+        .modal-icon-wrap.type-danger  { background: #fdecea; }
+        .modal-icon-wrap.type-success { background: #eafaf1; }
+        .modal-icon-wrap.type-warning { background: #fff3cd; }
+        .modal-icon-wrap.type-info    { background: #e8f4fd; }
+        .modal-icon-wrap.type-ghost   { background: #f0f0f0; }
         .modal-title { font-size: 1.15em; font-weight: 700; color: #2d3748; margin-bottom: 8px; }
         .modal-desc { font-size: 0.87em; color: #6c757d; line-height: 1.6; margin-bottom: 26px; }
         .modal-actions { display: flex; gap: 10px; justify-content: center; }
@@ -346,6 +404,19 @@
     </div>
 </header>
 
+<!-- 공지 배너 -->
+<div class="info-banner" id="infoBanner" th:if="${notifUnpaid > 0 or notifTodayAppts > 0}">
+    <span th:if="${notifUnpaid > 0}" class="banner-item banner-warn">
+        💳 수납 미완료 <strong th:text="${notifUnpaid}"></strong>명
+        <a href="/patients">바로가기 →</a>
+    </span>
+    <span th:if="${notifTodayAppts > 0}" class="banner-item banner-info">
+        📅 오늘 예약 <strong th:text="${notifTodayAppts}"></strong>건 대기 중
+        <a href="/appointments">바로가기 →</a>
+    </span>
+    <button class="banner-close" onclick="dismissBanner()">✕</button>
+</div>
+
 <div class="page-body">
 
     <!-- 예약 등록 폼 -->
@@ -444,14 +515,15 @@
                         <div class="action-group" style="justify-content:center;">
                             <a th:if="${a.status.name() == 'SCHEDULED'}"
                                th:href="@{/appointments/complete/{id}(id=${a.id})}"
-                               class="btn btn-success btn-sm">✔ 완료</a>
+                               class="btn btn-success btn-sm"
+                               onclick="showModal(this.href,'✔ 예약 완료 처리','해당 예약을 완료 상태로 변경합니다.','btn-success','✔'); return false;">✔ 완료</a>
                             <a th:if="${a.status.name() == 'SCHEDULED'}"
                                th:href="@{/appointments/cancel/{id}(id=${a.id})}"
                                class="btn btn-ghost btn-sm"
-                               onclick="showModal(this.href,'예약 취소','해당 예약을 취소 상태로 변경합니다.','btn-ghost'); return false;">✕ 취소</a>
+                               onclick="showModal(this.href,'✕ 예약 취소','해당 예약을 취소 상태로 변경합니다.','btn-ghost','✕'); return false;">✕ 취소</a>
                             <a th:href="@{/appointments/delete/{id}(id=${a.id})}"
                                class="btn btn-danger btn-sm"
-                               onclick="showModal(this.href,'🗑 예약 삭제','예약이 영구 삭제됩니다.','btn-danger'); return false;">🗑</a>
+                               onclick="showModal(this.href,'🗑 예약 삭제','예약이 영구 삭제됩니다.','btn-danger','🗑'); return false;">🗑</a>
                         </div>
                     </td>
                 </tr>
@@ -507,20 +579,30 @@
 })();
 
 // ── 토스트
+var TOAST_ICONS = { success: '✅', warning: '⚠️', danger: '🗑', info: 'ℹ️' };
 function showToast(msg, type) {
     var t = document.getElementById('toast');
-    t.textContent = msg;
+    var icon = TOAST_ICONS[type] || '✅';
+    t.innerHTML = '<div class="toast-body"><span class="toast-icon">' + icon +
+        '</span><span class="toast-msg">' + msg +
+        '</span><button class="toast-close" onclick="hideToast()">✕</button></div>' +
+        '<div class="toast-progress run"></div>';
     t.className = 'toast-' + (type || 'success') + ' show';
     clearTimeout(t._timer);
-    t._timer = setTimeout(function() { t.classList.remove('show'); }, 3500);
+    t._timer = setTimeout(hideToast, 3500);
 }
+function hideToast() { document.getElementById('toast').classList.remove('show'); }
 (function() {
     var td = document.getElementById('toast-data');
     if (td) setTimeout(function() { showToast(td.dataset.msg, td.dataset.type); }, 400);
 })();
 
 // ── 커스텀 모달
-function showModal(url, title, desc, btnClass) {
+function showModal(url, title, desc, btnClass, icon) {
+    var type = (btnClass || 'btn-danger').replace('btn-', '');
+    var wrap = document.getElementById('modalIconWrap');
+    wrap.className = 'modal-icon-wrap type-' + type;
+    document.getElementById('modalIcon').textContent = icon || '⚠️';
     document.getElementById('modalTitle').textContent = title;
     document.getElementById('modalDesc').textContent = desc;
     document.getElementById('modalConfirmBtn').href = url;
@@ -528,6 +610,19 @@ function showModal(url, title, desc, btnClass) {
     document.getElementById('confirmModal').classList.add('open');
 }
 function closeModal() { document.getElementById('confirmModal').classList.remove('open'); }
+
+// ── 공지 배너
+(function() {
+    var b = document.getElementById('infoBanner');
+    if (b && sessionStorage.getItem('bannerDismissed_appt')) b.style.display = 'none';
+})();
+function dismissBanner() {
+    sessionStorage.setItem('bannerDismissed_appt', '1');
+    var b = document.getElementById('infoBanner');
+    b.style.transition = 'opacity 0.3s, transform 0.3s';
+    b.style.opacity = '0'; b.style.transform = 'translateY(-10px)';
+    setTimeout(function() { b.style.display = 'none'; }, 300);
+}
 
 // ── 스크롤 페이드인
 (function() {
@@ -565,7 +660,9 @@ document.addEventListener('click', function() {
 <!-- 확인 모달 -->
 <div class="modal-overlay" id="confirmModal" onclick="if(event.target===this)closeModal()">
     <div class="modal-box">
-        <div class="modal-icon">⚠️</div>
+        <div class="modal-icon-wrap type-danger" id="modalIconWrap">
+            <span id="modalIcon">⚠️</span>
+        </div>
         <div class="modal-title" id="modalTitle">확인</div>
         <div class="modal-desc" id="modalDesc">계속하시겠습니까?</div>
         <div class="modal-actions">

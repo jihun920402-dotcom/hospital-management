@@ -7,7 +7,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 포트폴리오용 Spring Boot 병원 관리 시스템. 실제 서비스 아님.
 - **포트**: 8082
 - **DB**: H2 인메모리 (`jdbc:h2:mem:hospitaldb`) — 재시작 시 초기화됨
-- **H2 콘솔**: `http://localhost:8082/h2-console`
+- **H2 콘솔**: `http://localhost:8082/h2-console` (계정: sa / 비밀번호 없음)
 
 ## 실행 명령어
 
@@ -22,66 +22,92 @@ gradlew.bat build
 gradlew.bat test
 ```
 
-## 기술 스택
-
-- Spring Boot 4.0.3 / Java 25 / Gradle
-- Spring Data JPA + H2 + Lombok + Validation
-- Thymeleaf (서버사이드 렌더링, JS 프레임워크 없음)
-- Chart.js CDN (대시보드 차트)
-
 ## 아키텍처
 
-**레이어 구조**: Controller → Repository (Service 레이어 없음)
+**레이어 구조**: Controller → Repository (Service 레이어 없음 — 의도적 단순화)
 
-```
-PatientController  ──▶  PatientRepository
-                   ──▶  ChartRepository
-```
+- Spring Boot 4.0.3 / Java 25 / Gradle
+- Spring Data JPA + H2 + Lombok + Jakarta Validation
+- Thymeleaf (서버사이드 렌더링, JS 프레임워크 없음)
+- Chart.js CDN (대시보드 전용)
 
 **엔티티 관계**
-- `Patient` (1) ──▶ `Chart` (N) : `CascadeType.ALL` (환자 삭제 시 진료기록 함께 삭제)
-- `Patient.getAge()` : `birthDate` 필드에서 `Period.between()`으로 자동 계산하는 transient 메서드 — DB에 저장되지 않음
+- `Patient` (1) ──▶ `Chart` (N) : `CascadeType.ALL` — 환자 삭제 시 진료기록 함께 삭제
+- `Patient` (1) ──▶ `Appointment` (N) : CascadeType 없음
+- `Patient.getAge()` : `birthDate`에서 `Period.between()`으로 실시간 계산 — DB 컬럼 없음
 - `PatientStatus` enum : `WAITING / IN_PROGRESS / COMPLETED / HOSPITALIZED / DISCHARGED`
+- `AppointmentStatus` enum : `SCHEDULED / COMPLETED / CANCELLED`
 
 **URL 구조**
 
 | URL | 역할 |
 |---|---|
-| `GET /patients` | 환자 목록 (페이지네이션, 이름 검색) |
+| `GET /patients` | 환자 목록 (`?keyword=` 이름검색, 페이지네이션 size=5) |
 | `GET /patients/{id}` | 환자 상세 + 진료기록 |
-| `POST /patients` | 환자 등록 / 수정 |
-| `GET /patients/edit/{id}` | 수정 폼 (patientList 재사용) |
+| `POST /patients` | 환자 등록(id==null) / 수정(id!=null) |
+| `GET /patients/edit/{id}` | 수정 폼 (patientList 재사용, patient 객체 주입) |
 | `GET /patients/delete/{id}` | 환자 삭제 |
 | `POST /patients/{id}/charts` | 진료기록 추가 |
 | `GET /patients/update-status/{id}?status=` | 상태 변경 |
-| `GET /patients/pay/{id}` | 수납 처리 → status=COMPLETED, isPaid=true |
-| `GET /patients/hospitalize/{id}` | 입원 처리 → admissionDate=오늘 |
-| `GET /patients/discharge/{id}` | 퇴원 처리 → dischargeDate=오늘 |
+| `GET /patients/pay/{id}` | 수납 처리 → `isPaid=true`, `status=COMPLETED` |
+| `GET /patients/hospitalize/{id}` | 입원 → `status=HOSPITALIZED`, `admissionDate=오늘` |
+| `GET /patients/discharge/{id}` | 퇴원 → `status=DISCHARGED`, `dischargeDate=오늘` |
 | `GET /patients/dashboard` | 대시보드 |
-| `GET /appointments` | 예약 목록 (date 필터, 페이지네이션) |
-| `POST /appointments` | 예약 등록 |
+| `GET /appointments` | 예약 목록 (`?date=YYYY-MM-DD` 필터, size=10) |
+| `POST /appointments` | 예약 등록 (`patientId` 파라미터 별도 수신) |
 | `GET /appointments/complete/{id}` | 예약 완료 처리 |
 | `GET /appointments/cancel/{id}` | 예약 취소 처리 |
 | `GET /appointments/delete/{id}` | 예약 삭제 |
 
-**알림 벨 (전역)**
-- `NotificationAdvice` (@ControllerAdvice) 가 모든 페이지에 `notifCount`, `notifUnpaid`, `notifTodayAppts` 자동 주입
-- `notifUnpaid` = 진료 완료(COMPLETED) 상태이면서 수납 미완료인 환자 수
-- `notifTodayAppts` = 오늘 날짜 SCHEDULED 예약 수
+**전역 모델 주입 — NotificationAdvice**
+
+`@ControllerAdvice`로 모든 페이지에 자동 주입:
+- `notifUnpaid` = `status=COMPLETED && isPaid=false` 환자 수
+- `notifTodayAppts` = 오늘 날짜 `status=SCHEDULED` 예약 수
+- `notifCount` = 위 두 값의 합 (알림 벨 숫자)
 
 ## 샘플 데이터
 
-`src/main/resources/data.sql` — 앱 시작마다 자동 실행됨 (`spring.sql.init.mode=always`).
-H2 인메모리이므로 재시작 시 항상 초기 10명 환자 + 진료기록이 새로 삽입됨.
+`src/main/resources/data.sql` — 앱 시작마다 자동 실행 (`spring.sql.init.mode=always`).  
+환자 10명(상태별 2명씩) + 예약 10건 + 진료기록 13건. H2 인메모리이므로 재시작 시 항상 초기화됨.
 
 ## 템플릿 구조
 
-4개 Thymeleaf 템플릿이 공통 디자인 시스템을 공유함:
-- **공통 요소**: Canvas 기반 파티클 헤더, CSS 변수(`--primary`, `--accent` 등), Glassmorphism 패널, 3D 버튼
-- `patientList.html` : 등록/수정 폼 + 목록 테이블이 한 페이지에 공존. `patient.id == null` 여부로 등록/수정 모드 분기
-- `patientDetail.html` : 환자 기본정보 + 진료기록 추가 폼 + 진료기록 목록
-- `dashboard.html` : Chart.js 막대차트 + 통계카드. `th:inline="javascript"`로 서버 데이터 주입
-- `appointments.html` : 예약 등록 폼 + 예약 목록. 오늘 행 강조, 상태별 뱃지(SCHEDULED/COMPLETED/CANCELLED)
+4개 Thymeleaf 템플릿(`patientList`, `patientDetail`, `dashboard`, `appointments`)이 공통 디자인 시스템을 공유하되, **Thymeleaf fragment/layout을 사용하지 않고** 각 파일에 CSS·JS를 복사해 포함.  
+→ 헤더, 알림 벨, 파티클 Canvas, 토스트 등 공통 요소를 수정할 때 **4개 파일 모두** 수정해야 함.
+
+**공통 디자인 요소**
+- 헤더: `linear-gradient(135deg, #0d2d5e → #1a6fc4 → #00b8a9)` + Canvas 파티클 애니메이션
+- 배경: 다중 `radial-gradient` + `#e8f1fc`
+- 카드/패널: Glassmorphism — `rgba(255,255,255,0.68)`, `backdrop-filter: blur(18px)`
+- 버튼: 3D 눌림 — `box-shadow: 0 5px 0 rgba(0,0,0,0.16)`, `:active`에서 `translateY(4px)`
+- CSS 변수: `--primary #1a6fc4`, `--accent #00b8a9`, `--danger #e74c3c`, `--warning #f39c12`, `--success #27ae60`, `--purple #7d3c98`
+
+**템플릿별 특이사항**
+- `patientList.html` : 등록/수정 폼과 목록 테이블이 한 페이지 공존. `th:if="${patient.id == null}"` 로 모드 분기. 공지 팝업 포함.
+- `patientDetail.html` : 입원 버튼 조건 `status != null` 중복 체크 (기능 정상, 미완료 이슈)
+- `dashboard.html` : `th:inline="javascript"`로 서버 데이터를 Chart.js에 주입. 공지 배너(`sessionStorage bannerDismissed_dash`).
+- `appointments.html` : 오늘 날짜 행 강조, 상태별 뱃지 3종
+
+**토스트 알림 패턴**
+
+Controller에서 `RedirectAttributes`로 전달 → 템플릿의 숨김 div에서 JS로 읽어 표시:
+```java
+// Controller
+ra.addFlashAttribute("toast", "✔ 메시지");
+ra.addFlashAttribute("toastType", "success"); // success|danger|warning|info
+```
+```html
+<!-- 템플릿 -->
+<div id="toast-data" th:if="${toast}"
+     th:attr="data-msg=${toast},data-type=${toastType}" style="display:none"></div>
+```
+
+**공지 팝업 (`patientList.html`)**
+- localStorage 키: `noticeSkipDate` (값: `YYYY-MM-DD`)
+- 오늘 날짜와 일치하면 팝업 미표시, 다른 날짜면 표시
+- `closeNoticePopup(checkSkip)` 함수: `checkSkip=true`일 때만 체크박스 상태 확인해 저장
+- 현재 `patientList.html`에만 구현 — 다른 페이지에 추가 시 동일 키 사용하면 연동됨
 
 ## 업무 원칙
 
@@ -96,4 +122,4 @@ H2 인메모리이므로 재시작 시 항상 초기 10명 환자 + 진료기록
 |---|---|
 | 🟡 | `patientDetail.html` 입원 버튼 조건 중복 (`status != null` 체크 두 번) — 기능상 문제 없음 |
 | 🔵 | Security / 로그인 기능 없음 (포트폴리오용 의도적 제외) |
-| ✅ | 예약(Appointment) 기능 추가 완료 — AppointmentController + appointments.html |
+| 💡 | 공지 팝업 `dashboard.html`, `appointments.html`, `patientDetail.html` 에도 추가 가능 |
