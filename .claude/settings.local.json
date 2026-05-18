@@ -6,7 +6,9 @@
       "Bash(start \"\" cmd /c \"gradlew.bat bootRun > build_output.txt 2>&1\")",
       "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8082/patients)",
       "Bash(tasklist)",
-      "Bash(findstr node *)"
+      "Bash(findstr node *)",
+      "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\jihun\\\\Desktop\\\\project\\\\hospital-management\" -Recurse -Force)",
+      "Bash(Select-Object FullName)"
     ]
   }
 }
