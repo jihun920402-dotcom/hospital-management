@@ -117,6 +117,13 @@ inProgressCount    — 진료 중(IN_PROGRESS) 환자 수
 completedCount     — 진료 완료(COMPLETED) 환자 수
 ```
 
+## 인코딩 주의사항
+
+- `data.sql`은 **반드시 UTF-8**로 저장해야 함. `spring.sql.init.encoding=UTF-8` 설정이 없으면 Windows 기본 인코딩(EUC-KR)으로 읽어 DB 한글 데이터가 깨짐.
+- `application.properties`도 UTF-8로 저장. 한글 주석 포함 시 깨질 수 있으므로 주석은 영문 권장.
+- `build.gradle`의 `tasks.withType(JavaCompile) { options.encoding = 'UTF-8' }` — Java 소스 컴파일 인코딩 설정.
+- 현재 `application.properties`에 `server.servlet.encoding.force=true` 설정으로 응답 인코딩 강제 UTF-8 적용 중.
+
 ## 정적 리소스
 
 `src/main/resources/static/images/` 에 위치:
