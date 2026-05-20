@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>스마트병원 - Smart Hospital</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #1a6fc4;
+            --primary-dark: #155a9e;
+            --primary-light: #e8f1fb;
+            --accent: #00b8a9;
+            --danger: #e74c3c;
+            --warning: #f39c12;
+            --success: #27ae60;
+            --purple: #7d3c98;
+            --gray-50: #f8f9fa;
+            --gray-100: #f1f3f5;
+            --gray-200: #e9ecef;
+            --gray-400: #ced4da;
+            --gray-600: #6c757d;
+            --gray-800: #343a40;
+            --text: #2d3748;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'Noto Sans KR', sans-serif;
+            color: var(--text);
+            background: #fff;
+        }
+
+        /* ── GNB ── */
+        .gnb {
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            background: #fff;
+            border-bottom: 2px solid var(--primary);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .gnb-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 70px;
+        }
+        .gnb-logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            text-decoration: none;
+        }
+        .gnb-logo-icon {
+            width: 44px;
+            height: 44px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            flex-shrink: 0;
+        }
+        .gnb-logo-text {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--primary);
+            line-height: 1.2;
+        }
+        .gnb-logo-sub {
+            font-size: 11px;
+            color: var(--gray-600);
+            font-weight: 300;
+            display: block;
+        }
+        .gnb-nav {
+            display: flex;
+            gap: 4px;
+            list-style: none;
+            align-items: center;
+        }
+        .gnb-nav li a {
+            display: block;
+            padding: 8px 16px;
+            text-decoration: none;
+            color: var(--text);
+            font-size: 14px;
+            font-weight: 500;
+            border-radius: 6px;
+            transition: background 0.18s, color 0.18s;
+        }
+        .gnb-nav li a:hover {
+            background: var(--primary-light);
+            color: var(--primary);
+        }
+        .gnb-nav li a.btn-reserve {
+            background: var(--primary);
+            color: #fff;
+            border-radius: 20px;
+            padding: 8px 20px;
+            margin-left: 8px;
+        }
+        .gnb-nav li a.btn-reserve:hover {
+            background: var(--primary-dark);
+        }
+
+        /* ── 히어로 슬라이더 ── */
+        .hero {
+            position: relative;
+            height: 500px;
+            overflow: hidden;
+        }
+        .slide {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            text-align: center;
+            opacity: 0;
+            transition: opacity 0.8s ease;
+            padding: 40px 24px;
+        }
+        .slide.active { opacity: 1; }
+
+        /* 공통 이미지 배경 */
+        .slide-1, .slide-2, .slide-3 {
+            background-image: url('/images/hospitalmain.jpg');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+        }
+        /* 슬라이드별 색상 오버레이 */
+        .slide-1::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(13,45,94,0.72) 0%, rgba(26,111,196,0.60) 60%, rgba(33,150,243,0.50) 100%);
+            z-index: 0;
+        }
+        .slide-2::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(0,95,90,0.72) 0%, rgba(0,184,169,0.60) 60%, rgba(77,208,196,0.50) 100%);
+            z-index: 0;
+        }
+        .slide-3::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(10,26,61,0.78) 0%, rgba(26,58,140,0.65) 60%, rgba(41,82,200,0.55) 100%);
+            z-index: 0;
+        }
+        /* 슬라이드 내부 콘텐츠가 오버레이 위에 오도록 */
+        .slide > * { position: relative; z-index: 1; }
+
+        .slide-tag {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            color: #fff;
+            font-size: 12px;
+            padding: 5px 16px;
+            border-radius: 20px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(255,255,255,0.3);
+            letter-spacing: 2px;
+        }
+        .slide h2 {
+            font-size: 42px;
+            font-weight: 700;
+            color: #fff;
+            line-height: 1.35;
+            margin-bottom: 16px;
+            text-shadow: 0 2px 12px rgba(0,0,0,0.15);
+        }
+        .slide p {
+            font-size: 17px;
+            color: rgba(255,255,255,0.85);
+            margin-bottom: 32px;
+            max-width: 500px;
+        }
+        .slide-btn {
+            display: inline-block;
+            background: #fff;
+            color: var(--primary);
+            padding: 13px 34px;
+            border-radius: 30px;
+            font-weight: 700;
+            font-size: 15px;
+            text-decoration: none;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.14);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .slide-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+        }
+        .slide-2 .slide-btn { color: #007a72; }
+        .slide-3 .slide-btn { color: #1a3a8c; }
+
+        .slide-indicators {
+            position: absolute;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 8px;
+            z-index: 5;
+        }
+        .indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.4);
+            cursor: pointer;
+            transition: background 0.3s, transform 0.3s;
+            border: none;
+            padding: 0;
+        }
+        .indicator.active {
+            background: #fff;
+            transform: scale(1.35);
+        }
+        .slide-arrow {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            background: rgba(255,255,255,0.18);
+            border: 1.5px solid rgba(255,255,255,0.35);
+            color: #fff;
+            font-size: 24px;
+            width: 46px;
+            height: 46px;
+            border-radius: 50%;
+            cursor: pointer;
+            z-index: 5;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            line-height: 1;
+        }
+        .slide-arrow:hover { background: rgba(255,255,255,0.32); }
+        .slide-arrow.prev { left: 20px; }
+        .slide-arrow.next { right: 20px; }
+
+        /* ── 빠른 메뉴 ── */
+        .quick-menu {
+            background: #fff;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.08);
+            border-top: 3px solid var(--primary);
+        }
+        .quick-menu-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+        }
+        .quick-item {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 24px 28px;
+            text-decoration: none;
+            color: var(--text);
+            border-right: 1px solid var(--gray-200);
+            transition: background 0.18s;
+            cursor: pointer;
+        }
+        .quick-item:last-child { border-right: none; }
+        .quick-item:hover { background: var(--gray-50); }
+        .quick-item.no-link { cursor: default; }
+        .quick-item.no-link:hover { background: #fff; }
+
+        .quick-icon {
+            width: 52px;
+            height: 52px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            flex-shrink: 0;
+        }
+        .quick-icon.orange { background: #fff3e0; }
+        .quick-icon.teal   { background: #e0f7f5; }
+        .quick-icon.blue   { background: var(--primary-light); }
+        .quick-icon.gray   { background: var(--gray-100); }
+
+        .quick-label {
+            font-size: 15px;
+            font-weight: 700;
+            margin-bottom: 3px;
+            color: var(--text);
+        }
+        .quick-sub {
+            font-size: 12px;
+            color: var(--gray-600);
+        }
+
+        /* ── 서비스 섹션 ── */
+        .services-wrap {
+            background: #fff;
+            padding: 72px 24px;
+        }
+        .section-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .section-title {
+            text-align: center;
+            margin-bottom: 48px;
+        }
+        .section-title h2 {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 10px;
+        }
+        .section-title p {
+            font-size: 15px;
+            color: var(--gray-600);
+        }
+        .title-bar {
+            width: 48px;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            margin: 14px auto 0;
+            border-radius: 2px;
+        }
+        .services-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 24px;
+        }
+        .service-card {
+            background: #fff;
+            border: 1px solid var(--gray-200);
+            border-radius: 16px;
+            padding: 36px 20px 28px;
+            text-align: center;
+            transition: box-shadow 0.25s, transform 0.25s;
+        }
+        .service-card:hover {
+            box-shadow: 0 8px 32px rgba(26, 111, 196, 0.13);
+            transform: translateY(-5px);
+        }
+        .service-icon {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 32px;
+            margin: 0 auto 18px;
+        }
+        .service-card:nth-child(1) .service-icon { background: var(--primary-light); }
+        .service-card:nth-child(2) .service-icon { background: #e0f7f5; }
+        .service-card:nth-child(3) .service-icon { background: #fef9e7; }
+        .service-card:nth-child(4) .service-icon { background: #f5eef8; }
+
+        .service-name {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 8px;
+        }
+        .service-desc {
+            font-size: 13px;
+            color: var(--gray-600);
+            line-height: 1.7;
+        }
+
+        /* ── 공지사항 + 병원소개 ── */
+        .info-section {
+            background: var(--gray-50);
+            padding: 72px 24px;
+        }
+        .info-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+        }
+        .info-box {
+            background: #fff;
+            border-radius: 16px;
+            padding: 32px;
+            border: 1px solid var(--gray-200);
+        }
+        .info-box-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text);
+            margin-bottom: 20px;
+            padding-bottom: 14px;
+            border-bottom: 2px solid var(--primary-light);
+        }
+        .notice-list { list-style: none; }
+        .notice-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 13px 0;
+            border-bottom: 1px solid var(--gray-100);
+        }
+        .notice-item:last-child { border-bottom: none; }
+        .notice-badge {
+            font-size: 11px;
+            padding: 3px 9px;
+            border-radius: 10px;
+            font-weight: 600;
+            flex-shrink: 0;
+            white-space: nowrap;
+        }
+        .badge-notice { background: var(--primary-light); color: var(--primary); }
+        .badge-event  { background: #e0f7f5; color: #007a72; }
+        .badge-urgent { background: #fdecea; color: var(--danger); }
+
+        .notice-title-text {
+            flex: 1;
+            font-size: 14px;
+            color: var(--text);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .notice-date {
+            font-size: 12px;
+            color: var(--gray-600);
+            flex-shrink: 0;
+        }
+
+        /* 병원소개 */
+        .hospital-intro-text {
+            font-size: 14px;
+            color: var(--gray-600);
+            line-height: 1.9;
+            margin-bottom: 22px;
+        }
+        .hours-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+        }
+        .hours-table thead th {
+            background: var(--primary-light);
+            color: var(--primary);
+            padding: 9px 14px;
+            text-align: left;
+            font-weight: 600;
+        }
+        .hours-table thead th:first-child { border-radius: 6px 0 0 0; }
+        .hours-table thead th:last-child  { border-radius: 0 6px 0 0; }
+        .hours-table tbody td {
+            padding: 10px 14px;
+            border-bottom: 1px solid var(--gray-100);
+            color: var(--text);
+        }
+        .hours-table tbody tr:last-child td { border-bottom: none; }
+        .closed { color: var(--danger); font-weight: 700; }
+
+        /* ── 푸터 ── */
+        .footer {
+            background: #1a2332;
+            color: rgba(255,255,255,0.65);
+            padding: 44px 24px 24px;
+        }
+        .footer-inner {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        .footer-top {
+            display: flex;
+            gap: 56px;
+            margin-bottom: 28px;
+            flex-wrap: wrap;
+            align-items: flex-start;
+        }
+        .footer-logo-area {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-shrink: 0;
+            margin-bottom: 10px;
+        }
+        .footer-logo-icon {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+        .footer-name {
+            font-size: 18px;
+            font-weight: 700;
+            color: #fff;
+        }
+        .footer-info p {
+            font-size: 13px;
+            line-height: 2.1;
+        }
+        .footer-info .label {
+            color: rgba(255,255,255,0.42);
+            margin-right: 6px;
+        }
+        .footer-bottom {
+            border-top: 1px solid rgba(255,255,255,0.1);
+            padding-top: 20px;
+            font-size: 12px;
+            color: rgba(255,255,255,0.35);
+            text-align: center;
+        }
+
+        /* ── 반응형 ── */
+        @media (max-width: 1024px) {
+            .services-grid { grid-template-columns: repeat(2, 1fr); }
+            .quick-menu-inner { grid-template-columns: repeat(2, 1fr); }
+            .quick-item:nth-child(2) { border-right: none; }
+            .quick-item:nth-child(3) { border-right: 1px solid var(--gray-200); }
+            .quick-item:nth-child(4) { border-right: none; }
+            .info-inner { grid-template-columns: 1fr; }
+        }
+        @media (max-width: 768px) {
+            .hero { height: 380px; }
+            .slide h2 { font-size: 28px; }
+            .slide p { font-size: 15px; }
+            .gnb-nav { display: none; }
+            .gnb-inner { height: 60px; }
+            .services-wrap { padding: 48px 16px; }
+            .info-section { padding: 48px 16px; }
+        }
+        @media (max-width: 480px) {
+            .hero { height: 320px; }
+            .slide h2 { font-size: 22px; }
+            .slide p { font-size: 13px; margin-bottom: 20px; }
+            .slide-btn { padding: 10px 24px; font-size: 14px; }
+            .quick-menu-inner { grid-template-columns: repeat(2, 1fr); }
+            .quick-item { padding: 16px; }
+            .services-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+            .service-card { padding: 24px 12px 20px; }
+            .info-box { padding: 24px 18px; }
+            .footer-top { gap: 24px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ── GNB ── -->
+<header class="gnb">
+    <div class="gnb-inner">
+        <a th:href="@{/}" class="gnb-logo">
+            <div class="gnb-logo-icon">🏥</div>
+            <div>
+                <div class="gnb-logo-text">스마트병원</div>
+                <span class="gnb-logo-sub">Smart Hospital</span>
+            </div>
+        </a>
+        <nav>
+            <ul class="gnb-nav">
+                <li><a href="#">진료안내</a></li>
+                <li><a href="#">의료진 소개</a></li>
+                <li><a href="#">이용안내</a></li>
+                <li><a href="#">병원소개</a></li>
+                <li><a th:href="@{/appointments}" class="btn-reserve">진료예약</a></li>
+            </ul>
+        </nav>
+    </div>
+</header>
+
+<!-- ── 히어로 슬라이더 ── -->
+<section class="hero">
+    <!-- 슬라이드 1 -->
+    <div class="slide slide-1 active">
+        <span class="slide-tag">SMART HOSPITAL</span>
+        <h2>환자 중심의<br>스마트 의료 서비스</h2>
+        <p>최신 의료 시스템으로 빠르고 정확한 진료를 제공합니다</p>
+        <a th:href="@{/appointments}" class="slide-btn">진료 예약하기</a>
+    </div>
+    <!-- 슬라이드 2 -->
+    <div class="slide slide-2">
+        <span class="slide-tag">ADVANCED EQUIPMENT</span>
+        <h2>최첨단 의료 장비로<br>정확한 진단</h2>
+        <p>첨단 장비와 숙련된 의료진이 함께합니다</p>
+        <a th:href="@{/patients/dashboard}" class="slide-btn">진료 현황 보기</a>
+    </div>
+    <!-- 슬라이드 3 -->
+    <div class="slide slide-3">
+        <span class="slide-tag">ONLINE RESERVATION</span>
+        <h2>편리한<br>온라인 예약 시스템</h2>
+        <p>언제 어디서나 간편하게 진료를 예약하세요</p>
+        <a th:href="@{/appointments}" class="slide-btn">지금 예약하기</a>
+    </div>
+
+    <button class="slide-arrow prev" onclick="moveSlide(-1)">&#8249;</button>
+    <button class="slide-arrow next" onclick="moveSlide(1)">&#8250;</button>
+
+    <div class="slide-indicators">
+        <button class="indicator active" onclick="goSlide(0)"></button>
+        <button class="indicator" onclick="goSlide(1)"></button>
+        <button class="indicator" onclick="goSlide(2)"></button>
+    </div>
+</section>
+
+<!-- ── 빠른 메뉴 ── -->
+<div class="quick-menu">
+    <div class="quick-menu-inner">
+        <a th:href="@{/appointments}" class="quick-item">
+            <div class="quick-icon orange">📅</div>
+            <div>
+                <div class="quick-label">진료예약</div>
+                <div class="quick-sub">온라인 예약 바로가기</div>
+            </div>
+        </a>
+        <a th:href="@{/patients}" class="quick-item">
+            <div class="quick-icon teal">📋</div>
+            <div>
+                <div class="quick-label">환자관리</div>
+                <div class="quick-sub">환자 목록 조회</div>
+            </div>
+        </a>
+        <a th:href="@{/patients/dashboard}" class="quick-item">
+            <div class="quick-icon blue">📊</div>
+            <div>
+                <div class="quick-label">대시보드</div>
+                <div class="quick-sub">통계 현황 보기</div>
+            </div>
+        </a>
+        <div class="quick-item no-link">
+            <div class="quick-icon gray">📞</div>
+            <div>
+                <div class="quick-label">대표전화</div>
+                <div class="quick-sub">053-000-0000</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── 주요 서비스 ── -->
+<div class="services-wrap">
+    <div class="section-inner">
+        <div class="section-title">
+            <h2>주요 서비스</h2>
+            <p>스마트병원의 다양한 의료 서비스를 이용하세요</p>
+            <div class="title-bar"></div>
+        </div>
+        <div class="services-grid">
+            <div class="service-card">
+                <div class="service-icon">🏥</div>
+                <div class="service-name">진료안내</div>
+                <div class="service-desc">내과, 외과, 소아과 등<br>다양한 진료과를 운영합니다</div>
+            </div>
+            <div class="service-card">
+                <div class="service-icon">💊</div>
+                <div class="service-name">특화진료</div>
+                <div class="service-desc">당뇨, 고혈압, 관절 등<br>전문 특화 클리닉을 운영합니다</div>
+            </div>
+            <div class="service-card">
+                <div class="service-icon">🔬</div>
+                <div class="service-name">종합건강검진</div>
+                <div class="service-desc">개인 맞춤형 건강검진으로<br>질병을 조기에 발견합니다</div>
+            </div>
+            <div class="service-card">
+                <div class="service-icon">🏨</div>
+                <div class="service-name">입원안내</div>
+                <div class="service-desc">쾌적한 입원 환경에서<br>최적의 치료를 받으세요</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ── 공지사항 + 병원소개 ── -->
+<div class="info-section">
+    <div class="info-inner">
+
+        <!-- 공지사항 -->
+        <div class="info-box">
+            <div class="info-box-title">📢 공지사항</div>
+            <ul class="notice-list">
+                <li class="notice-item">
+                    <span class="notice-badge badge-urgent">긴급</span>
+                    <span class="notice-title-text">2026년 하절기 진료시간 변경 안내</span>
+                    <span class="notice-date">2026.05.15</span>
+                </li>
+                <li class="notice-item">
+                    <span class="notice-badge badge-event">이벤트</span>
+                    <span class="notice-title-text">건강검진 특별 할인 이벤트 (5~6월)</span>
+                    <span class="notice-date">2026.05.10</span>
+                </li>
+                <li class="notice-item">
+                    <span class="notice-badge badge-notice">공지</span>
+                    <span class="notice-title-text">전자의무기록(EMR) 시스템 업그레이드 안내</span>
+                    <span class="notice-date">2026.05.01</span>
+                </li>
+                <li class="notice-item">
+                    <span class="notice-badge badge-notice">공지</span>
+                    <span class="notice-title-text">주차장 이용 요금 변경 안내 (6월 1일부터)</span>
+                    <span class="notice-date">2026.04.25</span>
+                </li>
+            </ul>
+        </div>
+
+        <!-- 병원소개 + 진료시간 -->
+        <div class="info-box">
+            <div class="info-box-title">🏥 병원 소개 &amp; 진료시간</div>
+            <p class="hospital-intro-text">
+                스마트병원은 2010년 설립 이래 지역 주민의 건강을 위해 헌신해온 종합병원입니다.
+                최첨단 의료 장비와 숙련된 의료진이 함께하여 최고의 의료 서비스를 제공합니다.
+            </p>
+            <table class="hours-table">
+                <thead>
+                    <tr>
+                        <th>구분</th>
+                        <th>진료 시간</th>
+                        <th>점심시간</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>평일 (월~금)</td>
+                        <td>09:00 – 18:00</td>
+                        <td>12:30 – 13:30</td>
+                    </tr>
+                    <tr>
+                        <td>토요일</td>
+                        <td>09:00 – 13:00</td>
+                        <td>없음</td>
+                    </tr>
+                    <tr>
+                        <td>일요일 / 공휴일</td>
+                        <td class="closed">휴진</td>
+                        <td>–</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+    </div>
+</div>
+
+<!-- ── 푸터 ── -->
+<footer class="footer">
+    <div class="footer-inner">
+        <div class="footer-top">
+            <div>
+                <div class="footer-logo-area">
+                    <div class="footer-logo-icon">🏥</div>
+                    <div class="footer-name">스마트병원</div>
+                </div>
+            </div>
+            <div class="footer-info">
+                <p><span class="label">주소</span>대구광역시 중구 병원로 100 스마트빌딩 1~5층</p>
+                <p><span class="label">대표전화</span>053-000-0000 &nbsp;|&nbsp; <span class="label">팩스</span>053-000-0001</p>
+                <p><span class="label">이메일</span>info@smarthospital.kr</p>
+                <p><span class="label">사업자등록번호</span>123-45-67890</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            &copy; 2026 스마트병원 (Smart Hospital). All rights reserved.
+        </div>
+    </div>
+</footer>
+
+<script>
+    let currentSlide = 0;
+    const slides = document.querySelectorAll('.slide');
+    const indicators = document.querySelectorAll('.indicator');
+    let autoTimer;
+
+    function showSlide(n) {
+        slides[currentSlide].classList.remove('active');
+        indicators[currentSlide].classList.remove('active');
+        currentSlide = (n + slides.length) % slides.length;
+        slides[currentSlide].classList.add('active');
+        indicators[currentSlide].classList.add('active');
+    }
+
+    function moveSlide(dir) {
+        clearInterval(autoTimer);
+        showSlide(currentSlide + dir);
+        startAuto();
+    }
+
+    function goSlide(n) {
+        clearInterval(autoTimer);
+        showSlide(n);
+        startAuto();
+    }
+
+    function startAuto() {
+        autoTimer = setInterval(function() { showSlide(currentSlide + 1); }, 5000);
+    }
+
+    startAuto();
+</script>
+
+</body>
+</html>

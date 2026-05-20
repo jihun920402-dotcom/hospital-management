@@ -11,16 +11,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 실행 명령어
 
-```bash
-# 애플리케이션 실행 (Windows)
-gradlew.bat bootRun
+```powershell
+# 애플리케이션 실행 (Windows PowerShell)
+.\gradlew.bat bootRun
 
 # 빌드
-gradlew.bat build
+.\gradlew.bat build
 
 # 테스트
-gradlew.bat test
+.\gradlew.bat test
 ```
+
+> **포트 충돌 시**: `netstat -ano | Select-String ":8082"` 로 PID 확인 후 `Stop-Process -Id <PID> -Force`
 
 ## 아키텍처
 
@@ -30,6 +32,15 @@ gradlew.bat test
 - Spring Data JPA + H2 + Lombok + Jakarta Validation
 - Thymeleaf (서버사이드 렌더링, JS 프레임워크 없음)
 - Chart.js CDN (대시보드 전용)
+
+**컨트롤러 구조**
+
+| 컨트롤러 | 클래스 레벨 매핑 | 역할 |
+|---|---|---|
+| `HomeController` | 없음 | `GET /` → `index.html` (메인 홈페이지) |
+| `PatientController` | `/patients` | 환자 CRUD + 상태관리 + 대시보드 |
+| `AppointmentController` | `/appointments` | 예약 CRUD + 상태변경 |
+| `NotificationAdvice` | `@ControllerAdvice` | 전역 알림 카운트 주입 |
 
 **엔티티 관계**
 - `Patient` (1) ──▶ `Chart` (N) : `CascadeType.ALL` — 환자 삭제 시 진료기록 함께 삭제
@@ -50,6 +61,7 @@ gradlew.bat test
 
 | URL | 역할 |
 |---|---|
+| `GET /` | 메인 홈페이지 (index.html — 슬라이더·빠른메뉴·서비스·공지·푸터) |
 | `GET /patients` | 환자 목록 (`?keyword=` 이름검색, 페이지네이션 size=5) |
 | `GET /patients/{id}` | 환자 상세 + 진료기록 |
 | `POST /patients` | 환자 등록(id==null) / 수정(id!=null) |
@@ -105,6 +117,17 @@ inProgressCount    — 진료 중(IN_PROGRESS) 환자 수
 completedCount     — 진료 완료(COMPLETED) 환자 수
 ```
 
+## 정적 리소스
+
+`src/main/resources/static/images/` 에 위치:
+
+| 파일 | 용도 |
+|---|---|
+| `hospitalmain.jpg` | index.html 히어로 슬라이더 배경 이미지 (원본: hospitalmain.jfif → jpg 변환 복사) |
+| `hospital-desk.jpg` | 예비 이미지 (현재 미사용) |
+
+Thymeleaf에서 `/images/파일명` 경로로 참조. CSS에서는 `url('/images/파일명')`.
+
 ## 샘플 데이터
 
 `src/main/resources/data.sql` — 앱 시작마다 자동 실행 (`spring.sql.init.mode=always`).  
@@ -112,11 +135,12 @@ completedCount     — 진료 완료(COMPLETED) 환자 수
 
 ## 템플릿 구조
 
-5개 Thymeleaf 템플릿이 공통 디자인 시스템을 공유하되, **Thymeleaf fragment/layout을 사용하지 않고** 각 파일에 CSS·JS를 복사해 포함.  
+6개 Thymeleaf 템플릿이 공통 디자인 시스템을 공유하되, **Thymeleaf fragment/layout을 사용하지 않고** 각 파일에 CSS·JS를 복사해 포함.  
 → 헤더, 알림 벨, 파티클 Canvas, 토스트 등 공통 요소를 수정할 때 **관련 파일 모두** 수정해야 함.
 
 | 파일 | 용도 |
 |---|---|
+| `index.html` | 메인 홈페이지 (GNB·히어로 슬라이더·빠른메뉴·서비스·공지·푸터) |
 | `patientList.html` | 환자 목록 + 등록/수정 폼 |
 | `patientDetail.html` | 환자 상세 + 진료기록 |
 | `dashboard.html` | 통계 대시보드 (Chart.js) |
@@ -132,6 +156,7 @@ completedCount     — 진료 완료(COMPLETED) 환자 수
 - 반응형 브레이크포인트: 1024px / 768px / 480px
 
 **템플릿별 특이사항**
+- `index.html` : 일반 병원 홈페이지 스타일 (Glassmorphism·파티클 없음). 히어로 슬라이더 배경은 `hospitalmain.jpg` + 슬라이드별 `::before` 색상 오버레이. 슬라이드 콘텐츠에 `position: relative; z-index: 1` 필수.
 - `patientList.html` : 등록/수정 폼과 목록 테이블이 한 페이지 공존. `th:if="${patient.id == null}"` 로 모드 분기. 공지 팝업 포함.
 - `patientDetail.html` : 입원 버튼 조건 `status != null` 중복 체크 (기능 정상, 미완료 이슈)
 - `dashboard.html` : `th:inline="javascript"`로 서버 데이터를 Chart.js에 주입. 공지 배너(`sessionStorage bannerDismissed_dash`).
