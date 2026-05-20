@@ -8,7 +8,19 @@
       "Bash(tasklist)",
       "Bash(findstr node *)",
       "Bash(Get-ChildItem -Path \"C:\\\\Users\\\\jihun\\\\Desktop\\\\project\\\\hospital-management\" -Recurse -Force)",
-      "Bash(Select-Object FullName)"
+      "Bash(Select-Object FullName)",
+      "Bash(gradlew.bat bootRun)",
+      "PowerShell(Get-Process *)",
+      "PowerShell(Stop-Process *)",
+      "PowerShell(Start-Process \"http://localhost:8082\")",
+      "PowerShell(\\(Invoke-WebRequest -Uri \"http://localhost:8082/\" -UseBasicParsing\\).StatusCode)",
+      "PowerShell(Start-Process \"http://localhost:8082/\")",
+      "PowerShell(Start-Process \"http://localhost:8082/patients\")",
+      "PowerShell(Start-Process \"http://localhost:8082/appointments\")",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "PowerShell(.\\\\gradlew.bat bootRun 2>&1)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:8082/)"
     ]
   }
 }
