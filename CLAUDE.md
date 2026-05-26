@@ -33,6 +33,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - Thymeleaf (서버사이드 렌더링, JS 프레임워크 없음)
 - Chart.js CDN (대시보드 전용)
 
+**Spring Boot 4.x 의존성 아티팩트명** (build.gradle 기준, 표준과 다름)
+
+```groovy
+implementation 'org.springframework.boot:spring-boot-h2console'          // H2 콘솔
+implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+implementation 'org.springframework.boot:spring-boot-starter-webmvc'     // starter-web 아님
+implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+implementation 'org.springframework.boot:spring-boot-starter-validation'
+compileOnly     'org.projectlombok:lombok'
+runtimeOnly     'com.h2database:h2'
+```
+
 **컨트롤러 구조**
 
 | 컨트롤러 | 클래스 레벨 매핑 | 역할 |
@@ -53,9 +65,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 | 엔티티 | 주요 필드 |
 |---|---|
-| `Patient` | id, name, disease, birthDate, status, isPaid, admissionDate, dischargeDate, charts |
-| `Appointment` | id, patient(FK), appointmentDate, appointmentTime, doctorName, purpose, status |
-| `Chart` | id, patient(FK), symptom, diagnosis, prescription, chartDate, doctorName, fee(Integer, 기본값 0) |
+| `Patient` | id, name, disease, birthDate, status(기본값 WAITING), isPaid(기본값 false), admissionDate, dischargeDate, charts |
+| `Appointment` | id, patient(FK), appointmentDate(LocalDate), appointmentTime(LocalTime, HH:mm 포맷), doctorName, purpose, status(기본값 SCHEDULED) |
+| `Chart` | id, patient(FK), symptom, diagnosis, prescription, chartDate(LocalDate), doctorName, fee(Integer, 기본값 0) |
+
+**Patient 유효성 검사 제약조건** (Jakarta Validation, `@Valid` POST /patients 에서 적용)
+
+| 필드 | 어노테이션 | 오류 메시지 |
+|---|---|---|
+| `name` | `@NotBlank` | "이름은 필수입니다." |
+| `disease` | `@NotBlank` | "병명은 필수입니다." |
+| `birthDate` | `@NotNull` | "생년월일은 필수입니다." |
+| `birthDate` | `@Past` | "생년월일은 과거 날짜여야 합니다." |
+
+- `Chart`, `Appointment` 필드에는 유효성 검사 어노테이션 없음 (모두 nullable)
+- 유효성 오류 발생 시: `bindingResult.hasErrors()` → `patientRepository.findAll(pageable)` 재조회 후 `patientList` 뷰 반환 (redirect 없음)
 
 **URL 구조**
 
@@ -67,7 +91,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | `POST /patients` | 환자 등록(id==null) / 수정(id!=null) |
 | `GET /patients/edit/{id}` | 수정 폼 (patientList 재사용, patient 객체 주입) |
 | `GET /patients/delete/{id}` | 환자 삭제 |
-| `POST /patients/{id}/charts` | 진료기록 추가 |
+| `POST /patients/{patientId}/charts` | 진료기록 추가 |
 | `GET /patients/update-status/{id}?status=` | 상태 변경 |
 | `GET /patients/pay/{id}` | 수납 처리 → `isPaid=true`, `status=COMPLETED` |
 | `GET /patients/hospitalize/{id}` | 입원 → `status=HOSPITALIZED`, `admissionDate=오늘` |
@@ -121,8 +145,36 @@ completedCount     — 진료 완료(COMPLETED) 환자 수
 
 - `data.sql`은 **반드시 UTF-8**로 저장해야 함. `spring.sql.init.encoding=UTF-8` 설정이 없으면 Windows 기본 인코딩(EUC-KR)으로 읽어 DB 한글 데이터가 깨짐.
 - `application.properties`도 UTF-8로 저장. 한글 주석 포함 시 깨질 수 있으므로 주석은 영문 권장.
-- `build.gradle`의 `tasks.withType(JavaCompile) { options.encoding = 'UTF-8' }` — Java 소스 컴파일 인코딩 설정.
+- `build.gradle`의 `tasks.withType(JavaCompile).configureEach { options.encoding = 'UTF-8' }` — Java 소스 컴파일 인코딩 설정.
 - 현재 `application.properties`에 `server.servlet.encoding.force=true` 설정으로 응답 인코딩 강제 UTF-8 적용 중.
+
+## application.properties 주요 설정
+
+```properties
+server.port=8082
+server.servlet.encoding.charset=UTF-8
+server.servlet.encoding.force=true
+
+# H2 인메모리 DB
+spring.datasource.url=jdbc:h2:mem:hospitaldb
+spring.datasource.username=sa
+spring.datasource.password=
+
+# H2 콘솔
+spring.h2.console.enabled=true
+spring.h2.console.path=/h2-console
+
+# JPA
+spring.jpa.hibernate.ddl-auto=update         # 기동 시 스키마 자동 갱신
+spring.jpa.show-sql=true                      # 콘솔에 SQL 출력
+spring.jpa.properties.hibernate.format_sql=true
+spring.jpa.defer-datasource-initialization=true  # JPA 테이블 생성 후 data.sql 실행 (순서 보장)
+
+spring.sql.init.mode=always
+spring.sql.init.encoding=UTF-8
+```
+
+> **`spring.jpa.defer-datasource-initialization=true` 필수**: JPA DDL로 테이블 생성 후 `data.sql`이 실행되도록 순서를 보장함. 이 설정 없으면 data.sql 실행 시 테이블이 존재하지 않아 오류 발생.
 
 ## 정적 리소스
 
@@ -138,7 +190,9 @@ Thymeleaf에서 `/images/파일명` 경로로 참조. CSS에서는 `url('/images
 ## 샘플 데이터
 
 `src/main/resources/data.sql` — 앱 시작마다 자동 실행 (`spring.sql.init.mode=always`).  
-환자 10명(상태별 2명씩) + 예약 10건(SCHEDULED 7·COMPLETED 2·CANCELLED 1) + 진료기록 14건. H2 인메모리이므로 재시작 시 항상 초기화됨.
+환자 10명(WAITING 2·IN_PROGRESS 2·HOSPITALIZED 2·COMPLETED 2·DISCHARGED 2) + 예약 10건(SCHEDULED 7·COMPLETED 2·CANCELLED 1) + 진료기록 14건. H2 인메모리이므로 재시작 시 항상 초기화됨.
+
+날짜는 `DATEADD('YEAR', -N, CURRENT_DATE)` 형식 사용 — 기동 시점 기준 상대 날짜로 삽입됨.
 
 ## 템플릿 구조
 
@@ -156,11 +210,12 @@ Thymeleaf에서 `/images/파일명` 경로로 참조. CSS에서는 `url('/images
 
 **공통 디자인 요소**
 - 헤더: `linear-gradient(135deg, #0d2d5e → #1a6fc4 → #00b8a9)` + Canvas 파티클 애니메이션
-- 배경: 다중 `radial-gradient` + `#e8f1fc`
+- 배경: 다중 `radial-gradient` + `#e8f1fc` (`body::before { display: none; }` 로 오버레이 비활성화)
 - 카드/패널: Glassmorphism — `rgba(255,255,255,0.68)`, `backdrop-filter: blur(18px)`
 - 버튼: 3D 눌림 — `box-shadow: 0 5px 0 rgba(0,0,0,0.16)`, `:active`에서 `translateY(4px)`
 - CSS 변수: `--primary #1a6fc4`, `--accent #00b8a9`, `--danger #e74c3c`, `--warning #f39c12`, `--success #27ae60`, `--purple #7d3c98`
 - 반응형 브레이크포인트: 1024px / 768px / 480px
+- 공통 폰트: Google Fonts `Noto Sans KR` (300·400·500·700)
 
 **템플릿별 특이사항**
 - `index.html` : 일반 병원 홈페이지 스타일 (Glassmorphism·파티클 없음). 히어로 슬라이더 배경은 `hospitalmain.jpg` + 슬라이드별 `::before` 색상 오버레이. 슬라이드 콘텐츠에 `position: relative; z-index: 1` 필수.
